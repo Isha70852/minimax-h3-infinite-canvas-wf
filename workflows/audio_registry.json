@@ -162,8 +162,17 @@
         "key": "audio",
         "label": "參考聲音",
         "type": "audio",
-        "node": "2",
+        "node": "17",
         "field": "audio"
+      },
+      {
+        "key": "emotion_audio",
+        "label": "情感參考聲音（選填）",
+        "type": "audio",
+        "node": "16",
+        "field": "audio",
+        "optional": true,
+        "fallback": "audio"
       },
       {
         "key": "emotion",
@@ -199,7 +208,8 @@
         ],
         "default": "JA"
       }
-    ]
+    ],
+    "version": 2
   },
   "breeze_clone": {
     "name": "Breeze TTS2 voice clone",

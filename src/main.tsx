@@ -737,9 +737,10 @@ function App() {
     }
     if(n.data.kind==='text')return {...defaults(config!),prompt:n.data.text||'',mode:referenceRows(id,edges,assets).length?'Ref2VA':'T2VA',references:referenceRows(id,edges,assets).map((r:any)=>({asset_id:r.asset.id,role:r.role}))};
     if(n.data.audio_spec){
-      const spec={...n.data.audio_spec,text_sources:{} as Record<string,string>};
+      const spec={...n.data.audio_spec,audio_assets:{...(n.data.audio_spec as any).audio_assets} as Record<string,string>,text_sources:{} as Record<string,string>};
+      const audioFields=config?.audio_workflows?.find(d=>d.id===spec.workflow)?.fields.filter((f:any)=>f.type==='audio').map((f:any)=>f.key)||[];
       for(const edge of edges.filter(e=>e.target===id)){
-        if(edge.targetHandle==='audio')spec.audio_asset_id=edge.data?.asset_id;
+        if(edge.targetHandle&&audioFields.includes(edge.targetHandle)){spec.audio_assets[edge.targetHandle]=edge.data?.asset_id as string;if(edge.targetHandle==='audio')spec.audio_asset_id=edge.data?.asset_id;}
         else if(edge.targetHandle)spec.text_sources[edge.targetHandle]=edge.source;
       }
       return spec;

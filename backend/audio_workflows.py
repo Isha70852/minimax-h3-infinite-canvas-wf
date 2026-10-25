@@ -12,11 +12,12 @@ class AudioGeneration(BaseModel):
     workflow: str
     values: dict[str, str | float] = Field(default_factory=dict)
     audio_asset_id: str | None = None
+    audio_assets: dict[str,str] = Field(default_factory=dict)
     text_sources: dict[str,str] = Field(default_factory=dict)
 
     @property
     def references(self):
-        return [Reference(asset_id=self.audio_asset_id)] if self.audio_asset_id else []
+        return [Reference(asset_id=id) for id in dict.fromkeys([*self.audio_assets.values(), *([self.audio_asset_id] if self.audio_asset_id else [])]) if id]
 
 def catalog():
     return [{'id':key, **{k:v for k,v in entry.items() if k!='output'},
@@ -44,10 +45,14 @@ def compile_audio(spec, assets, filenames=None, seed=0):
         graph={k:v for k,v in graph.items() if k in entry['active_nodes']}
     fields={f['key']:f for f in entry['fields']}
     if set(spec.values)-fields.keys(): raise ValueError('此功能不支援指定的輸入欄位。')
+    audio_fields={k for k,f in fields.items() if f["type"]=="audio"}
+    if set(spec.audio_assets)-audio_fields: raise ValueError("此功能不支援指定的聲音欄位。")
+    def audio_id(key):
+        return spec.audio_assets.get(key) or (spec.audio_asset_id if key=="audio" else None)
     mapping=[]
     for key,f in fields.items():
         if f['type']=='audio':
-            asset=assets.get(spec.audio_asset_id)
+            asset=assets.get(audio_id(key) or audio_id(f.get("fallback", "")))
             if not asset or asset.get('kind')!='audio': raise ValueError('請選擇或連接一個聲音素材。')
             value=(filenames or {}).get(asset['id'],asset['filename'])
             mapping.append({'id':asset['id'],'name':asset['name'],'field':key})

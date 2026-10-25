@@ -1,16 +1,13 @@
 {
-  "2": {
-    "inputs": {
-      "audio": "",
-      "audioUI": ""
-    },
-    "class_type": "LoadAudio"
-  },
   "3": {
     "inputs": {
       "mode": "reference_audio",
       "mode.strength": [
         "8",
+        0
+      ],
+      "mode.emotion_audio": [
+        "16",
         0
       ]
     },
@@ -44,13 +41,13 @@
   "11": {
     "inputs": {
       "text": "",
-      "language": "JA",
+      "language": "ZH",
       "duration_factor": 1,
       "target_duration_mode": "off",
       "target_duration_seconds": 0,
       "postprocess_preset": "off",
       "postprocess_strength": 1,
-      "seed": 210328125057020,
+      "seed": 779260261307108,
       "quality_retry_count": 0,
       "quality_asr_backend": "auto",
       "quality_asr_model": "base",
@@ -61,7 +58,7 @@
         0
       ],
       "speaker_audio": [
-        "2",
+        "17",
         0
       ],
       "emotion": [
@@ -101,7 +98,7 @@
   },
   "14": {
     "inputs": {
-      "filename_prefix": "H3Canvas/output",
+      "filename_prefix": "audio/ComfyUI",
       "format": "mp3",
       "format.quality": "V0",
       "audio": [
@@ -110,5 +107,19 @@
       ]
     },
     "class_type": "SaveAudioAdvanced"
+  },
+  "16": {
+    "inputs": {
+      "audio": "",
+      "audioUI": ""
+    },
+    "class_type": "LoadAudio"
+  },
+  "17": {
+    "inputs": {
+      "audio": "",
+      "audioUI": ""
+    },
+    "class_type": "LoadAudio"
   }
 }

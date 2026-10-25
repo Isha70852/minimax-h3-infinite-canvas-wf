@@ -1,8 +1,8 @@
 {
   "id": "df4f869f-43b4-41dd-8b99-253433ef40e3",
   "revision": 0,
-  "last_node_id": 15,
-  "last_link_id": 31,
+  "last_node_id": 17,
+  "last_link_id": 36,
   "nodes": [
     {
       "id": 12,
@@ -214,52 +214,6 @@
       ]
     },
     {
-      "id": 8,
-      "type": "Float",
-      "pos": [
-        164.87232971191406,
-        262.59033203125
-      ],
-      "size": [
-        360.4742126464844,
-        58
-      ],
-      "flags": {},
-      "order": 1,
-      "mode": 0,
-      "inputs": [
-        {
-          "label": "value",
-          "name": "value",
-          "type": "FLOAT",
-          "widget": {
-            "name": "value"
-          }
-        }
-      ],
-      "outputs": [
-        {
-          "label": "FLOAT",
-          "name": "FLOAT",
-          "type": "FLOAT",
-          "links": [
-            7,
-            18,
-            22,
-            27,
-            30
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "Float",
-        "widget_ue_connectable": {}
-      },
-      "widgets_values": [
-        0.8000000000000002
-      ]
-    },
-    {
       "id": 14,
       "type": "SaveAudioAdvanced",
       "pos": [
@@ -271,7 +225,7 @@
         106
       ],
       "flags": {},
-      "order": 6,
+      "order": 7,
       "mode": 0,
       "inputs": [
         {
@@ -326,7 +280,7 @@
         694.8211669921875
       ],
       "flags": {},
-      "order": 5,
+      "order": 6,
       "mode": 0,
       "inputs": [
         {
@@ -339,7 +293,7 @@
           "label": "speaker_audio",
           "name": "speaker_audio",
           "type": "AUDIO",
-          "link": 31
+          "link": 36
         },
         {
           "label": "emotion",
@@ -487,13 +441,13 @@
       },
       "widgets_values": [
         "",
-        "JA",
+        "ZH",
         1,
         "off",
         0,
         "off",
         1,
-        210328125057020,
+        779260261307108,
         "randomize",
         0,
         "auto",
@@ -503,18 +457,86 @@
       ]
     },
     {
+      "id": 3,
+      "type": "T8_IndexTTS25_EmotionControl",
+      "pos": [
+        1112.600830078125,
+        57.98072052001953
+      ],
+      "size": [
+        260.0581970214844,
+        102
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "mode",
+          "name": "mode",
+          "type": "COMFY_DYNAMICCOMBO_V3",
+          "widget": {
+            "name": "mode"
+          }
+        },
+        {
+          "name": "mode.emotion_audio",
+          "type": "AUDIO",
+          "link": 35
+        },
+        {
+          "name": "mode.strength",
+          "type": "FLOAT",
+          "widget": {
+            "name": "mode.strength"
+          },
+          "link": 34
+        }
+      ],
+      "outputs": [
+        {
+          "label": "情感控制",
+          "name": "情感控制",
+          "type": "T8_INDEXTTS25_EMOTION",
+          "links": [
+            12
+          ]
+        },
+        {
+          "label": "情感信息",
+          "name": "情感信息",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "T8_IndexTTS25_EmotionControl",
+        "cnr_id": "comfyui-indextts25-t8",
+        "ver": "0.1.0",
+        "widget_ue_connectable": {
+          "mode": true,
+          "mode.emotion_text": true,
+          "mode.strength": true
+        }
+      },
+      "widgets_values": [
+        "reference_audio",
+        1
+      ]
+    },
+    {
       "id": 10,
       "type": "T8_IndexTTS25_ModelLoader",
       "pos": [
-        635.9138793945312,
-        59.553245544433594
+        644.395751953125,
+        267.83233642578125
       ],
       "size": [
         390,
         390
       ],
       "flags": {},
-      "order": 2,
+      "order": 1,
       "mode": 0,
       "inputs": [
         {
@@ -668,81 +690,57 @@
       ]
     },
     {
-      "id": 3,
-      "type": "T8_IndexTTS25_EmotionControl",
+      "id": 8,
+      "type": "Float",
       "pos": [
-        1106.00390625,
-        57.03828048706055
+        194.52146911621094,
+        254.60789489746094
       ],
       "size": [
-        260.0581970214844,
-        102
+        360.4742126464844,
+        58
       ],
       "flags": {},
-      "order": 4,
+      "order": 2,
       "mode": 0,
       "inputs": [
         {
-          "label": "mode",
-          "name": "mode",
-          "type": "COMFY_DYNAMICCOMBO_V3",
-          "widget": {
-            "name": "mode"
-          }
-        },
-        {
-          "label": "mode.emotion_audio",
-          "name": "mode.emotion_audio",
-          "type": "AUDIO",
-          "link": null
-        },
-        {
-          "label": "mode.strength",
-          "name": "mode.strength",
+          "label": "value",
+          "name": "value",
           "type": "FLOAT",
           "widget": {
-            "name": "mode.strength"
-          },
-          "link": 30
+            "name": "value"
+          }
         }
       ],
       "outputs": [
         {
-          "label": "情感控制",
-          "name": "情感控制",
-          "type": "T8_INDEXTTS25_EMOTION",
+          "label": "FLOAT",
+          "name": "FLOAT",
+          "type": "FLOAT",
           "links": [
-            12
+            7,
+            18,
+            22,
+            27,
+            34
           ]
-        },
-        {
-          "label": "情感信息",
-          "name": "情感信息",
-          "type": "STRING",
-          "links": []
         }
       ],
       "properties": {
-        "Node name for S&R": "T8_IndexTTS25_EmotionControl",
-        "cnr_id": "comfyui-indextts25-t8",
-        "ver": "0.1.0",
-        "widget_ue_connectable": {
-          "mode": true,
-          "mode.emotion_text": true,
-          "mode.strength": true
-        }
+        "Node name for S&R": "Float",
+        "widget_ue_connectable": {}
       },
       "widgets_values": [
-        "reference_audio",
-        1
+        0.8000000000000002
       ]
     },
     {
-      "id": 15,
+      "id": 17,
       "type": "LoadAudio",
       "pos": [
-        273.85107421875,
-        17.25271987915039
+        303.3546447753906,
+        2.221262216567993
       ],
       "size": [
         274.080078125,
@@ -758,7 +756,7 @@
           "name": "AUDIO",
           "type": "AUDIO",
           "links": [
-            31
+            36
           ]
         }
       ],
@@ -767,7 +765,42 @@
         "Node name for S&R": "LoadAudio"
       },
       "widgets_values": [
-        "None",
+        "",
+        null,
+        ""
+      ]
+    },
+    {
+      "id": 16,
+      "type": "LoadAudio",
+      "pos": [
+        279.4072265625,
+        411.6073913574219
+      ],
+      "size": [
+        274.080078125,
+        136
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "AUDIO",
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            35
+          ]
+        }
+      ],
+      "properties": {
+        "widget_ue_connectable": {},
+        "Node name for S&R": "LoadAudio"
+      },
+      "widgets_values": [
+        "",
         null,
         ""
       ]
@@ -807,7 +840,7 @@
       "AUDIO"
     ],
     [
-      30,
+      34,
       8,
       0,
       3,
@@ -815,8 +848,16 @@
       "FLOAT"
     ],
     [
-      31,
-      15,
+      35,
+      16,
+      0,
+      3,
+      1,
+      "AUDIO"
+    ],
+    [
+      36,
+      17,
       0,
       11,
       1,
@@ -841,8 +882,8 @@
       "id": 4,
       "title": "情感权重",
       "bounding": [
-        154.87232971191406,
-        188.99034118652344,
+        184.52146911621094,
+        181.00787353515625,
         380.47418212890625,
         141.60000610351562
       ],
@@ -862,10 +903,10 @@
       4
     ],
     "ds": {
-      "scale": 0.7972024500000006,
+      "scale": 0.6588450000000003,
       "offset": [
-        165.0238985086736,
-        181.3605111369533
+        -137.67536899269322,
+        163.02016852181978
       ]
     },
     "frontendVersion": "1.23.0",
