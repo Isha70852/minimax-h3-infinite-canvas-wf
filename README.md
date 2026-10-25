@@ -59,13 +59,11 @@ The API supports discovery, project read/write, image/video/audio uploads, optio
 | `workflow_template.json`, `workflows/` | Sanitized runtime graphs and parameter/node registries; preserve compiler mappings |
 | `example_workflows/` | Public UI/API exports for import; node numbers may differ from runtime templates |
 | `skills/h3-canvas-api/` | Canvas automation skill |
-| `skills/h3-prompt-writing/` | H3 prompt-writing guidance |
 | `colab/`, `skills/minimax-h3-remote-skill/` | **Independent** Google Colab H3 remote tool and its agent skill; not the canvas backend |
 | `data/` | Local SQLite settings/projects/jobs, media, outputs and authentication state; NEVER publish |
 
 The Colab notebook can be opened in Google Colab and used with its corresponding remote skill. Configure its runtime and credentials there; it does not automatically connect to the canvas.
 
-`data/`, installed packages, caches, original private docs, research scripts and notebook outputs are excluded from Git/releases. Prompt-writing templates are deliberate instructions; user scene prompts and input filenames have been removed from shared workflow graphs. Model names remain because workflows need them. Package a release with `package-share.ps1`; it uses an explicit public-file allowlist.
 
 ## License and acknowledgements
 

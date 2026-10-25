@@ -4,7 +4,7 @@ from zipfile import ZipFile, ZIP_DEFLATED
 import hashlib
 ROOT=Path(__file__).resolve().parents[1]
 FILES=['LICENSE','README.md','README.zh-TW.md','AGENTS.md','THIRD_PARTY_NOTICES.md','index.html','package.json','package-lock.json','requirements.txt','requirements.lock.txt','tsconfig.json','vite.config.ts','workflow_template.json','setup.ps1','install-runtime.ps1','start.ps1','package-share.ps1','啟動畫布.cmd']
-DIRS=['src','backend','workflows','licenses','skills','colab','example_workflows','dist','scripts']
+DIRS=['src','backend','workflows','licenses','skills/h3-canvas-api','skills/minimax-h3-remote-skill','colab','example_workflows','dist','scripts']
 EXTS={'.py','.tsx','.ts','.css','.json','.mjs','.md','.txt','.yaml','.yml','.ipynb','.html','.js','.svg','.map','.ps1'}
 def package():
     if not (ROOT/'dist/index.html').exists():raise SystemExit('Run npm run build first.')

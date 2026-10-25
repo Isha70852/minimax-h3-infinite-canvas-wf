@@ -59,13 +59,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start.ps1
 | `workflow_template.json`、`workflows/` | 已清理的執行模板及參數／節點映射，修改時須保持對應 |
 | `example_workflows/` | 分享用 UI/API 工作流，節點編號可與執行模板不同 |
 | `skills/h3-canvas-api/` | 無限畫布操作 skill |
-| `skills/h3-prompt-writing/` | H3 提示詞撰寫指南 |
 | `colab/`、`skills/minimax-h3-remote-skill/` | **獨立**的 Google Colab H3 工具與操作 skill，並非畫布後端 |
 | `data/` | 本機 SQLite、設定、專案、素材、生成結果及認證資訊，不可公開 |
 
 Colab 文件可在 Google Colab 開啟，依筆記本設定執行環境與認證，再使用對應 remote skill；不會自動接入無限畫布。
 
-Git／Release 排除私人 data、套件、快取、原始私人文件、實驗腳本及 notebook 輸出。提示詞教學模板是刻意保留的操作說明，分享工作流中的使用者劇情提示詞及輸入檔名已清除。模型檔名保留供工作流辨識。`package-share.ps1` 使用公開檔案白名單打包。
 
 ## 授權與致謝
 

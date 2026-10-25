@@ -23,3 +23,7 @@ release/
 dist/
 *.zip
 .ipynb_checkpoints/
+
+# Local-only tests and third-party prompt-writing skill
+tests/
+skills/h3-prompt-writing/
