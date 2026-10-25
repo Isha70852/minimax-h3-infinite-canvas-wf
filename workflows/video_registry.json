@@ -1,0 +1,73 @@
+{
+  "version": 2,
+  "template": "../workflow_template.json",
+  "motion_template": "video_motion_mp4.json",
+  "nodes": {
+    "condition": "166",
+    "model": "303",
+    "lora": "304",
+    "prompt": "138",
+    "resolution": "115",
+    "duration": "132",
+    "noise": "129",
+    "sampler": "123",
+    "scheduler": "124",
+    "output": "174",
+    "shift": "158",
+    "kitchen": "148",
+    "sol": "297",
+    "low_vram": "229",
+    "chunks": "230",
+    "guider": "126",
+    "sample": "125",
+    "motion": "314",
+    "trim": "318",
+    "context_video": "311",
+    "context_components": "312",
+    "video_decode": "122",
+    "audio_decode": "121"
+  },
+  "fields": {
+    "model": [
+      "model",
+      "unet_name"
+    ],
+    "lora": [
+      "lora",
+      "lora_name"
+    ],
+    "prompt": [
+      "prompt",
+      "value"
+    ],
+    "megapixels": [
+      "resolution",
+      "megapixels"
+    ],
+    "aspect_ratio": [
+      "resolution",
+      "aspect_ratio"
+    ],
+    "duration": [
+      "duration",
+      "value"
+    ],
+    "seed": [
+      "noise",
+      "noise_seed"
+    ],
+    "sampler": [
+      "sampler",
+      "sampler_name"
+    ],
+    "steps": [
+      "scheduler",
+      "steps"
+    ],
+    "scheduler": [
+      "scheduler",
+      "scheduler"
+    ]
+  },
+  "reference_node_start": 1000
+}

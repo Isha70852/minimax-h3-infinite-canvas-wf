@@ -1,0 +1,143 @@
+{
+  "46": {
+    "inputs": {
+      "filename_prefix": "H3Canvas/output",
+      "images": [
+        "94",
+        0
+      ]
+    },
+    "class_type": "SaveImage"
+  },
+  "91": {
+    "inputs": {
+      "aspect_ratio": "1:1 (Square)",
+      "megapixels": 1,
+      "multiple": 16
+    },
+    "class_type": "ResolutionSelector"
+  },
+  "92": {
+    "inputs": {
+      "clip_name": "qwen_3_06b_base.safetensors",
+      "type": "stable_diffusion",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader"
+  },
+  "93": {
+    "inputs": {
+      "vae_name": "qwen_image_vae.safetensors"
+    },
+    "class_type": "VAELoader"
+  },
+  "94": {
+    "inputs": {
+      "samples": [
+        "97",
+        0
+      ],
+      "vae": [
+        "93",
+        0
+      ]
+    },
+    "class_type": "VAEDecode"
+  },
+  "95": {
+    "inputs": {
+      "width": [
+        "91",
+        0
+      ],
+      "height": [
+        "91",
+        1
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage"
+  },
+  "96": {
+    "inputs": {
+      "text": "",
+      "clip": [
+        "92",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode"
+  },
+  "97": {
+    "inputs": {
+      "seed": 749480898416404,
+      "steps": [
+        "100",
+        0
+      ],
+      "cfg": [
+        "105",
+        0
+      ],
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "109",
+        0
+      ],
+      "positive": [
+        "98",
+        0
+      ],
+      "negative": [
+        "96",
+        0
+      ],
+      "latent_image": [
+        "95",
+        0
+      ]
+    },
+    "class_type": "KSampler"
+  },
+  "98": {
+    "inputs": {
+      "text": "",
+      "clip": [
+        "92",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode"
+  },
+  "99": {
+    "inputs": {
+      "unet_name": "anima_aestheticV11.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader"
+  },
+  "100": {
+    "inputs": {
+      "value": 30
+    },
+    "class_type": "PrimitiveInt"
+  },
+  "105": {
+    "inputs": {
+      "value": 4
+    },
+    "class_type": "PrimitiveFloat"
+  },
+  "109": {
+    "inputs": {
+      "strength_model": 1,
+      "model": [
+        "99",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly"
+  }
+}

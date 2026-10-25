@@ -1,0 +1,161 @@
+{
+  "10": {
+    "inputs": {
+      "filename_prefix": "H3Canvas/output",
+      "format": "mp3",
+      "format.quality": "V0",
+      "audio": [
+        "53",
+        0
+      ]
+    },
+    "class_type": "SaveAudioAdvanced"
+  },
+  "45": {
+    "inputs": {
+      "audio": "",
+      "audioUI": ""
+    },
+    "class_type": "LoadAudio"
+  },
+  "47": {
+    "inputs": {
+      "ckpt_name": "yue2_3b_int8_convrot.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple"
+  },
+  "48": {
+    "inputs": {
+      "style": "",
+      "lyrics": "",
+      "abc": [
+        "57",
+        0
+      ],
+      "seed": [
+        "54",
+        0
+      ],
+      "mode": "melody",
+      "max_duration": 360,
+      "temperature": 1,
+      "top_p": 0.95,
+      "top_k": 100,
+      "repetition_penalty": 1.2,
+      "cfg_scale": 1,
+      "clip": [
+        "47",
+        1
+      ]
+    },
+    "class_type": "YuE2GenerateMusic"
+  },
+  "49": {
+    "inputs": {
+      "conditioning": [
+        "48",
+        0
+      ]
+    },
+    "class_type": "ConditioningZeroOut"
+  },
+  "50": {
+    "inputs": {
+      "preview": "",
+      "source": [
+        "48",
+        1
+      ]
+    },
+    "class_type": "PreviewAny"
+  },
+  "51": {
+    "inputs": {
+      "seed": [
+        "54",
+        0
+      ],
+      "steps": 32,
+      "cfg": 1,
+      "sampler_name": "dpm_2",
+      "scheduler": "sgm_uniform",
+      "denoise": 1,
+      "model": [
+        "47",
+        0
+      ],
+      "positive": [
+        "48",
+        0
+      ],
+      "negative": [
+        "49",
+        0
+      ],
+      "latent_image": [
+        "52",
+        0
+      ]
+    },
+    "class_type": "KSampler"
+  },
+  "52": {
+    "inputs": {
+      "seconds": [
+        "48",
+        1
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptyYuE2LatentAudio"
+  },
+  "53": {
+    "inputs": {
+      "samples": [
+        "51",
+        0
+      ],
+      "vae": [
+        "47",
+        2
+      ]
+    },
+    "class_type": "VAEDecodeAudio"
+  },
+  "54": {
+    "inputs": {
+      "seed": 922060810338310
+    },
+    "class_type": "SeedNode"
+  },
+  "55": {
+    "inputs": {
+      "mode": "melody",
+      "audio_encoder": [
+        "56",
+        0
+      ],
+      "audio": [
+        "45",
+        0
+      ]
+    },
+    "class_type": "SheetSage2AudioToABC"
+  },
+  "56": {
+    "inputs": {
+      "audio_encoder_name": "sheetsage2_bf16.safetensors"
+    },
+    "class_type": "AudioEncoderLoader"
+  },
+  "57": {
+    "inputs": {
+      "preview": "",
+      "source": [
+        "55",
+        0
+      ]
+    },
+    "class_type": "PreviewAny"
+  }
+}

@@ -1,0 +1,384 @@
+{
+  "id": "cd732cf0-c62d-4c2d-998a-e0e40c8464c5",
+  "revision": 0,
+  "last_node_id": 43,
+  "last_link_id": 51,
+  "nodes": [
+    {
+      "id": 42,
+      "type": "SaveAudioAdvanced",
+      "pos": [
+        -648.1336059570312,
+        340.9208679199219
+      ],
+      "size": [
+        210,
+        106
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "audio",
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 49
+        },
+        {
+          "label": "filename_prefix",
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          }
+        },
+        {
+          "label": "format",
+          "name": "format",
+          "type": "COMFY_DYNAMICCOMBO_V3",
+          "widget": {
+            "name": "format"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "audio",
+          "name": "audio",
+          "type": "AUDIO"
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveAudioAdvanced",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "audio/ComfyUI",
+        "mp3",
+        "V0"
+      ]
+    },
+    {
+      "id": 40,
+      "type": "FB_Qwen3TTSVoiceClone",
+      "pos": [
+        -727.2546997070312,
+        -378.5838623046875
+      ],
+      "size": [
+        400,
+        600
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "ref_audio",
+          "name": "ref_audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": 51
+        },
+        {
+          "label": "voice_clone_prompt",
+          "name": "voice_clone_prompt",
+          "shape": 7,
+          "type": "VOICE_CLONE_PROMPT"
+        },
+        {
+          "label": "config",
+          "name": "config",
+          "shape": 7,
+          "type": "TTS_CONFIG"
+        },
+        {
+          "label": "target_text",
+          "name": "target_text",
+          "type": "STRING",
+          "widget": {
+            "name": "target_text"
+          }
+        },
+        {
+          "label": "model_choice",
+          "name": "model_choice",
+          "type": "COMBO",
+          "widget": {
+            "name": "model_choice"
+          }
+        },
+        {
+          "label": "device",
+          "name": "device",
+          "type": "COMBO",
+          "widget": {
+            "name": "device"
+          }
+        },
+        {
+          "label": "precision",
+          "name": "precision",
+          "type": "COMBO",
+          "widget": {
+            "name": "precision"
+          }
+        },
+        {
+          "label": "language",
+          "name": "language",
+          "type": "COMBO",
+          "widget": {
+            "name": "language"
+          }
+        },
+        {
+          "label": "ref_text",
+          "name": "ref_text",
+          "shape": 7,
+          "type": "STRING",
+          "widget": {
+            "name": "ref_text"
+          }
+        },
+        {
+          "label": "seed",
+          "name": "seed",
+          "shape": 7,
+          "type": "INT",
+          "widget": {
+            "name": "seed"
+          }
+        },
+        {
+          "label": "max_new_tokens",
+          "name": "max_new_tokens",
+          "shape": 7,
+          "type": "INT",
+          "widget": {
+            "name": "max_new_tokens"
+          }
+        },
+        {
+          "label": "top_p",
+          "name": "top_p",
+          "shape": 7,
+          "type": "FLOAT",
+          "widget": {
+            "name": "top_p"
+          }
+        },
+        {
+          "label": "top_k",
+          "name": "top_k",
+          "shape": 7,
+          "type": "INT",
+          "widget": {
+            "name": "top_k"
+          }
+        },
+        {
+          "label": "temperature",
+          "name": "temperature",
+          "shape": 7,
+          "type": "FLOAT",
+          "widget": {
+            "name": "temperature"
+          }
+        },
+        {
+          "label": "repetition_penalty",
+          "name": "repetition_penalty",
+          "shape": 7,
+          "type": "FLOAT",
+          "widget": {
+            "name": "repetition_penalty"
+          }
+        },
+        {
+          "label": "x_vector_only",
+          "name": "x_vector_only",
+          "shape": 7,
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "x_vector_only"
+          }
+        },
+        {
+          "label": "attention",
+          "name": "attention",
+          "shape": 7,
+          "type": "COMBO",
+          "widget": {
+            "name": "attention"
+          }
+        },
+        {
+          "label": "unload_model_after_generate",
+          "name": "unload_model_after_generate",
+          "shape": 7,
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "unload_model_after_generate"
+          }
+        },
+        {
+          "label": "custom_model_path",
+          "name": "custom_model_path",
+          "shape": 7,
+          "type": "STRING",
+          "widget": {
+            "name": "custom_model_path"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "audio",
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            49
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "FB_Qwen3TTSVoiceClone",
+        "cnr_id": "qwen3-tts-comfyui",
+        "ver": "c7db6c2eb0f269d358c53bb71688dc95de4f7d07",
+        "widget_ue_connectable": {
+          "ref_text": true,
+          "target_text": true,
+          "seed": true,
+          "x_vector_only": true,
+          "precision": true,
+          "language": true,
+          "top_p": true,
+          "unload_model_after_generate": true,
+          "max_new_tokens": true,
+          "top_k": true,
+          "temperature": true,
+          "attention": true,
+          "device": true,
+          "model_choice": true,
+          "repetition_penalty": true
+        }
+      },
+      "widgets_values": [
+        "",
+        "1.7B",
+        "auto",
+        "bf16",
+        "Japanese",
+        "",
+        1124313524108220,
+        "randomize",
+        2048,
+        0.8,
+        20,
+        1,
+        2,
+        false,
+        "sage_attn",
+        false,
+        ""
+      ]
+    },
+    {
+      "id": 43,
+      "type": "LoadAudio",
+      "pos": [
+        -1017.289306640625,
+        -368.5849914550781
+      ],
+      "size": [
+        274.080078125,
+        136
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "AUDIO",
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            51
+          ]
+        }
+      ],
+      "properties": {
+        "widget_ue_connectable": {},
+        "Node name for S&R": "LoadAudio"
+      },
+      "widgets_values": [
+        "None",
+        null,
+        ""
+      ]
+    }
+  ],
+  "links": [
+    [
+      49,
+      40,
+      0,
+      42,
+      0,
+      "AUDIO"
+    ],
+    [
+      51,
+      43,
+      0,
+      40,
+      0,
+      "AUDIO"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "Voice Clone",
+      "bounding": [
+        -1030,
+        -460,
+        710,
+        585.5999755859375
+      ],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "links_added_by_ue": [],
+    "KKvideo_latentpreview": false,
+    "0246.VERSION": [
+      0,
+      0,
+      4
+    ],
+    "VHS_latentpreview": false,
+    "ds": {
+      "scale": 0.7972024500000005,
+      "offset": [
+        1603.4300907048398,
+        527.1116457779377
+      ]
+    },
+    "VHS_KeepIntermediate": true,
+    "VHS_MetadataImage": true,
+    "ue_links": [],
+    "KKvideo_latentpreviewrate": 0,
+    "pixaromaGroups": [],
+    "workflowRendererVersion": "LG",
+    "VHS_latentpreviewrate": 0,
+    "frontendVersion": "1.23.0"
+  },
+  "version": 0.4
+}

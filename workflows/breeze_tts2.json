@@ -1,0 +1,129 @@
+{
+  "4": {
+    "inputs": {
+      "text": "",
+      "reference_text": "",
+      "cfg_scale": 1,
+      "max_new_tokens": 1500,
+      "temperature": 0.9,
+      "top_k": 50,
+      "top_p": 1,
+      "repetition_penalty": 1.1,
+      "depth_temperature": 0.9,
+      "depth_top_k": 50,
+      "depth_top_p": 1,
+      "seed": 313061680,
+      "breeze_model": [
+        "18",
+        0
+      ],
+      "reference_audio": [
+        "6",
+        0
+      ]
+    },
+    "class_type": "BreezeTTS2VoiceClone"
+  },
+  "6": {
+    "inputs": {
+      "audio": "",
+      "audioUI": ""
+    },
+    "class_type": "LoadAudio"
+  },
+  "8": {
+    "inputs": {
+      "text": "",
+      "instruction": "",
+      "cfg_scale": 4,
+      "max_new_tokens": 1500,
+      "temperature": 0.9,
+      "top_k": 50,
+      "top_p": 1,
+      "repetition_penalty": 1.1,
+      "depth_temperature": 0.9,
+      "depth_top_k": 50,
+      "depth_top_p": 1,
+      "seed": 740946498,
+      "breeze_model": [
+        "18",
+        0
+      ]
+    },
+    "class_type": "BreezeTTS2VoiceDesign"
+  },
+  "16": {
+    "inputs": {
+      "text": "",
+      "reference_text": "",
+      "instruction": "",
+      "cfg_scale": 4,
+      "stitch_reference": "none",
+      "max_new_tokens": 1500,
+      "temperature": 0.9,
+      "top_k": 50,
+      "top_p": 1,
+      "repetition_penalty": 1.1,
+      "depth_temperature": 0.9,
+      "depth_top_k": 50,
+      "depth_top_p": 1,
+      "seed": 538834364,
+      "breeze_model": [
+        "18",
+        0
+      ],
+      "reference_audio": [
+        "6",
+        0
+      ]
+    },
+    "class_type": "BreezeTTS2VoiceDirection"
+  },
+  "18": {
+    "inputs": {
+      "model": "bf16 (best quality)",
+      "dtype": "auto",
+      "device": "auto",
+      "attention": "auto",
+      "decode_mode": "cuda_graphs",
+      "download_if_missing": false
+    },
+    "class_type": "BreezeTTS2LoadModel"
+  },
+  "32": {
+    "inputs": {
+      "filename_prefix": "H3Canvas/output",
+      "format": "mp3",
+      "format.quality": "V0",
+      "audio": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "SaveAudioAdvanced"
+  },
+  "33": {
+    "inputs": {
+      "filename_prefix": "H3Canvas/output",
+      "format": "mp3",
+      "format.quality": "V0",
+      "audio": [
+        "16",
+        0
+      ]
+    },
+    "class_type": "SaveAudioAdvanced"
+  },
+  "34": {
+    "inputs": {
+      "filename_prefix": "H3Canvas/output",
+      "format": "mp3",
+      "format.quality": "V0",
+      "audio": [
+        "4",
+        0
+      ]
+    },
+    "class_type": "SaveAudioAdvanced"
+  }
+}

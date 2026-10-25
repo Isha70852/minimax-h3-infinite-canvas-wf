@@ -1,0 +1,122 @@
+{
+  "9": {
+    "inputs": {
+      "filename_prefix": "H3Canvas/output",
+      "images": [
+        "61",
+        0
+      ]
+    },
+    "class_type": "SaveImage"
+  },
+  "58": {
+    "inputs": {
+      "clip_name": "qwen_3_4b.safetensors",
+      "type": "lumina2",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader"
+  },
+  "59": {
+    "inputs": {
+      "vae_name": "ae.safetensors"
+    },
+    "class_type": "VAELoader"
+  },
+  "60": {
+    "inputs": {
+      "conditioning": [
+        "63",
+        0
+      ]
+    },
+    "class_type": "ConditioningZeroOut"
+  },
+  "61": {
+    "inputs": {
+      "samples": [
+        "66",
+        0
+      ],
+      "vae": [
+        "59",
+        0
+      ]
+    },
+    "class_type": "VAEDecode"
+  },
+  "62": {
+    "inputs": {
+      "unet_name": "z_image_turbo_bf16.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader"
+  },
+  "63": {
+    "inputs": {
+      "text": "",
+      "clip": [
+        "58",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode"
+  },
+  "64": {
+    "inputs": {
+      "width": 1024,
+      "height": 1024,
+      "batch_size": 1
+    },
+    "class_type": "EmptySD3LatentImage"
+  },
+  "65": {
+    "inputs": {
+      "shift": 3,
+      "sampling": "flow",
+      "model": [
+        "67",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow"
+  },
+  "66": {
+    "inputs": {
+      "seed": 588932742489483,
+      "steps": 8,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "65",
+        0
+      ],
+      "positive": [
+        "63",
+        0
+      ],
+      "negative": [
+        "60",
+        0
+      ],
+      "latent_image": [
+        "64",
+        0
+      ]
+    },
+    "class_type": "KSampler"
+  },
+  "67": {
+    "inputs": {
+      "lora_name": "花 zimage zitmythr3alisticf.kkNi.safetensors",
+      "strength_model": 1,
+      "model": [
+        "62",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly"
+  }
+}

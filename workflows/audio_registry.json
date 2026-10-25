@@ -1,0 +1,361 @@
+{
+  "yue_text": {
+    "name": "yue2 text to music",
+    "category": "music",
+    "output": "10",
+    "fields": [
+      {
+        "key": "style",
+        "label": "Style",
+        "type": "text",
+        "node": "54",
+        "field": "value",
+        "optional": false,
+        "default": ""
+      },
+      {
+        "key": "lyrics",
+        "label": "歌詞",
+        "type": "text",
+        "node": "55",
+        "field": "value",
+        "optional": false,
+        "default": ""
+      }
+    ]
+  },
+  "yue_cover": {
+    "name": "yue2 music cover",
+    "category": "music",
+    "output": "10",
+    "fields": [
+      {
+        "key": "audio",
+        "label": "參考聲音",
+        "type": "audio",
+        "node": "45",
+        "field": "audio"
+      },
+      {
+        "key": "style",
+        "label": "Style",
+        "type": "text",
+        "node": "48",
+        "field": "style",
+        "optional": false,
+        "default": ""
+      },
+      {
+        "key": "lyrics",
+        "label": "歌詞",
+        "type": "text",
+        "node": "48",
+        "field": "lyrics",
+        "optional": false,
+        "default": ""
+      }
+    ]
+  },
+  "qwen_design": {
+    "name": "qwen3 tts voice design",
+    "category": "tts",
+    "output": "41",
+    "fields": [
+      {
+        "key": "text",
+        "label": "生成的話語",
+        "type": "text",
+        "node": "38",
+        "field": "text",
+        "optional": false,
+        "default": ""
+      },
+      {
+        "key": "instruct",
+        "label": "語音設計",
+        "type": "text",
+        "node": "38",
+        "field": "instruct",
+        "optional": false,
+        "default": ""
+      },
+      {
+        "key": "language",
+        "label": "語言",
+        "type": "select",
+        "node": "38",
+        "field": "language",
+        "options": [
+          "Chinese",
+          "English",
+          "Japanese",
+          "Korean",
+          "French",
+          "German",
+          "Spanish",
+          "Portuguese",
+          "Russian",
+          "Italian"
+        ],
+        "default": "Japanese"
+      }
+    ]
+  },
+  "qwen_clone": {
+    "name": "qwen3 tts voice clone",
+    "category": "tts",
+    "output": "42",
+    "fields": [
+      {
+        "key": "audio",
+        "label": "參考聲音",
+        "type": "audio",
+        "node": "24",
+        "field": "audio"
+      },
+      {
+        "key": "ref_text",
+        "label": "參考聲音的文字（可空白）",
+        "type": "text",
+        "node": "40",
+        "field": "ref_text",
+        "optional": true,
+        "default": ""
+      },
+      {
+        "key": "text",
+        "label": "要生成的文字",
+        "type": "text",
+        "node": "40",
+        "field": "target_text",
+        "optional": false,
+        "default": ""
+      },
+      {
+        "key": "language",
+        "label": "語言",
+        "type": "select",
+        "node": "40",
+        "field": "language",
+        "options": [
+          "Chinese",
+          "English",
+          "Japanese",
+          "Korean",
+          "French",
+          "German",
+          "Spanish",
+          "Portuguese",
+          "Russian",
+          "Italian"
+        ],
+        "default": "Japanese"
+      }
+    ]
+  },
+  "index_clone": {
+    "name": "indextts2.5 voice clone",
+    "category": "tts",
+    "output": "14",
+    "fields": [
+      {
+        "key": "audio",
+        "label": "參考聲音",
+        "type": "audio",
+        "node": "2",
+        "field": "audio"
+      },
+      {
+        "key": "emotion",
+        "label": "情感權重",
+        "type": "number",
+        "node": "8",
+        "field": "value",
+        "min": 0,
+        "max": 1,
+        "default": 0.8
+      },
+      {
+        "key": "text",
+        "label": "要生成的話",
+        "type": "text",
+        "node": "11",
+        "field": "text",
+        "optional": false,
+        "default": ""
+      },
+      {
+        "key": "language",
+        "label": "語言",
+        "type": "select",
+        "node": "11",
+        "field": "language",
+        "options": [
+          "ZH",
+          "EN",
+          "JA",
+          "ES",
+          "AR"
+        ],
+        "default": "JA"
+      }
+    ]
+  },
+  "breeze_clone": {
+    "name": "Breeze TTS2 voice clone",
+    "category": "tts",
+    "output": "34",
+    "template": "breeze_tts2.json",
+    "active_nodes": [
+      "18",
+      "4",
+      "34",
+      "6"
+    ],
+    "fields": [
+      {
+        "key": "model",
+        "label": "模型",
+        "type": "select",
+        "node": "18",
+        "field": "model",
+        "default": "int8 hybrid (recommended)",
+        "options": [
+          "int8 hybrid (recommended)",
+          "bf16 (best quality)",
+          "int8 (smallest, slower)"
+        ]
+      },
+      {
+        "key": "text",
+        "label": "輸出的文字",
+        "type": "text",
+        "node": "4",
+        "field": "text",
+        "default": "",
+        "optional": false
+      },
+      {
+        "key": "audio",
+        "label": "參考聲音",
+        "type": "audio",
+        "node": "6",
+        "field": "audio"
+      },
+      {
+        "key": "reference_text",
+        "label": "參考音頻文字",
+        "type": "text",
+        "node": "4",
+        "field": "reference_text",
+        "default": "",
+        "optional": false
+      }
+    ]
+  },
+  "breeze_direction": {
+    "name": "Breeze TTS2 voice direction",
+    "category": "tts",
+    "output": "33",
+    "template": "breeze_tts2.json",
+    "active_nodes": [
+      "18",
+      "16",
+      "33",
+      "6"
+    ],
+    "fields": [
+      {
+        "key": "model",
+        "label": "模型",
+        "type": "select",
+        "node": "18",
+        "field": "model",
+        "default": "int8 hybrid (recommended)",
+        "options": [
+          "int8 hybrid (recommended)",
+          "bf16 (best quality)",
+          "int8 (smallest, slower)"
+        ]
+      },
+      {
+        "key": "text",
+        "label": "輸出的文字",
+        "type": "text",
+        "node": "16",
+        "field": "text",
+        "default": "",
+        "optional": false
+      },
+      {
+        "key": "audio",
+        "label": "參考聲音",
+        "type": "audio",
+        "node": "6",
+        "field": "audio"
+      },
+      {
+        "key": "reference_text",
+        "label": "參考音頻文字",
+        "type": "text",
+        "node": "16",
+        "field": "reference_text",
+        "default": "",
+        "optional": false
+      },
+      {
+        "key": "instruction",
+        "label": "語調",
+        "type": "text",
+        "node": "16",
+        "field": "instruction",
+        "default": "",
+        "optional": false
+      }
+    ]
+  },
+  "breeze_design": {
+    "name": "Breeze TTS2 voice design",
+    "category": "tts",
+    "output": "32",
+    "template": "breeze_tts2.json",
+    "active_nodes": [
+      "18",
+      "8",
+      "32"
+    ],
+    "fields": [
+      {
+        "key": "model",
+        "label": "模型",
+        "type": "select",
+        "node": "18",
+        "field": "model",
+        "default": "int8 hybrid (recommended)",
+        "options": [
+          "int8 hybrid (recommended)",
+          "bf16 (best quality)",
+          "int8 (smallest, slower)"
+        ]
+      },
+      {
+        "key": "text",
+        "label": "輸出的文字",
+        "type": "text",
+        "node": "8",
+        "field": "text",
+        "default": "",
+        "optional": false
+      },
+      {
+        "key": "instruction",
+        "label": "聲音描述",
+        "type": "text",
+        "node": "8",
+        "field": "instruction",
+        "default": "",
+        "optional": false
+      }
+    ]
+  }
+}

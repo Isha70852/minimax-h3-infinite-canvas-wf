@@ -1,0 +1,25 @@
+# Local state and installed runtimes
+data/
+.venv/
+node_modules/
+.tools/
+.npm-cache/
+.pip-cache/
+.pytest_cache/
+.test-temp/
+__pycache__/
+*.pyc
+*.tsbuildinfo
+*.log
+*.sqlite*
+*.db
+.env*
+*.pem
+*.key
+# Local historical inputs and experiments
+docs/
+research/
+release/
+dist/
+*.zip
+.ipynb_checkpoints/

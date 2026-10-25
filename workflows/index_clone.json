@@ -1,0 +1,114 @@
+{
+  "2": {
+    "inputs": {
+      "audio": "",
+      "audioUI": ""
+    },
+    "class_type": "LoadAudio"
+  },
+  "3": {
+    "inputs": {
+      "mode": "reference_audio",
+      "mode.strength": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "T8_IndexTTS25_EmotionControl"
+  },
+  "8": {
+    "inputs": {
+      "value": 0.8000000000000002
+    },
+    "class_type": "Float"
+  },
+  "10": {
+    "inputs": {
+      "model_name": "IndexTTS-2.5",
+      "device": "auto",
+      "precision": "auto",
+      "acceleration_mode": "off",
+      "use_cuda_kernel": false,
+      "release_after_run": false,
+      "recycle_after_runs": 0,
+      "verify_hashes": false,
+      "reference_device": "auto",
+      "reuse_spk_cond_for_emo": false,
+      "persistent_reference_cache": true,
+      "download_missing": "",
+      "accept_model_license": false,
+      "custom_model_path": ""
+    },
+    "class_type": "T8_IndexTTS25_ModelLoader"
+  },
+  "11": {
+    "inputs": {
+      "text": "",
+      "language": "JA",
+      "duration_factor": 1,
+      "target_duration_mode": "off",
+      "target_duration_seconds": 0,
+      "postprocess_preset": "off",
+      "postprocess_strength": 1,
+      "seed": 210328125057020,
+      "quality_retry_count": 0,
+      "quality_asr_backend": "auto",
+      "quality_asr_model": "base",
+      "quality_asr_device": "auto",
+      "quality_threshold": 0.82,
+      "model": [
+        "10",
+        0
+      ],
+      "speaker_audio": [
+        "2",
+        0
+      ],
+      "emotion": [
+        "3",
+        0
+      ],
+      "sampling": [
+        "12",
+        0
+      ]
+    },
+    "class_type": "T8_IndexTTS25_Generate"
+  },
+  "12": {
+    "inputs": {
+      "do_sample": false,
+      "temperature": 0.8,
+      "top_p": 0.8,
+      "top_k": 30,
+      "num_beams": 3,
+      "repetition_penalty": 10,
+      "length_penalty": 0,
+      "max_mel_tokens": 1500,
+      "diffusion_steps": 25,
+      "inference_cfg_rate": 0.7,
+      "cfm_temperature": 1,
+      "segmentation_mode": "auto",
+      "max_text_tokens_per_segment": 120,
+      "segment_silence_ms": 200,
+      "pause_preset": "off",
+      "comma_pause_ms": 100,
+      "sentence_pause_ms": 300,
+      "paragraph_pause_ms": 600,
+      "text_normalization": true
+    },
+    "class_type": "T8_IndexTTS25_SamplingConfig"
+  },
+  "14": {
+    "inputs": {
+      "filename_prefix": "H3Canvas/output",
+      "format": "mp3",
+      "format.quality": "V0",
+      "audio": [
+        "11",
+        0
+      ]
+    },
+    "class_type": "SaveAudioAdvanced"
+  }
+}

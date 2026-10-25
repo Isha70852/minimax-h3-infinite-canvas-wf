@@ -1,0 +1,240 @@
+{
+  "138": {
+    "inputs": {
+      "unet_name": "flux-2-klein-4b-fp8.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader"
+  },
+  "139": {
+    "inputs": {
+      "clip_name": "qwen_3_4b.safetensors",
+      "type": "flux2",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader"
+  },
+  "140": {
+    "inputs": {
+      "vae_name": "flux2-vae.safetensors"
+    },
+    "class_type": "VAELoader"
+  },
+  "141": {
+    "inputs": {
+      "text": "",
+      "clip": [
+        "139",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode"
+  },
+  "142": {
+    "inputs": {
+      "text": "",
+      "clip": [
+        "139",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode"
+  },
+  "147": {
+    "inputs": {
+      "width": [
+        "155",
+        0
+      ],
+      "height": [
+        "155",
+        1
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptyFlux2LatentImage"
+  },
+  "149": {
+    "inputs": {
+      "samples": [
+        "158",
+        0
+      ],
+      "vae": [
+        "140",
+        0
+      ]
+    },
+    "class_type": "VAEDecode"
+  },
+  "150": {
+    "inputs": {
+      "filename_prefix": "H3Canvas/output",
+      "images": [
+        "149",
+        0
+      ]
+    },
+    "class_type": "SaveImage"
+  },
+  "152": {
+    "inputs": {
+      "image": ""
+    },
+    "class_type": "LoadImage"
+  },
+  "154": {
+    "inputs": {
+      "pixels": [
+        "152",
+        0
+      ],
+      "vae": [
+        "140",
+        0
+      ]
+    },
+    "class_type": "VAEEncode"
+  },
+  "155": {
+    "inputs": {
+      "image": [
+        "152",
+        0
+      ]
+    },
+    "class_type": "GetImageSize"
+  },
+  "156": {
+    "inputs": {
+      "conditioning": [
+        "141",
+        0
+      ],
+      "latent": [
+        "154",
+        0
+      ]
+    },
+    "class_type": "ReferenceLatent"
+  },
+  "157": {
+    "inputs": {
+      "conditioning": [
+        "142",
+        0
+      ],
+      "latent": [
+        "154",
+        0
+      ]
+    },
+    "class_type": "ReferenceLatent"
+  },
+  "158": {
+    "inputs": {
+      "seed": 256797007694756,
+      "steps": 4,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "138",
+        0
+      ],
+      "positive": [
+        "163",
+        0
+      ],
+      "negative": [
+        "164",
+        0
+      ],
+      "latent_image": [
+        "165",
+        0
+      ]
+    },
+    "class_type": "KSampler"
+  },
+  "159": {
+    "inputs": {
+      "image": ""
+    },
+    "class_type": "LoadImage"
+  },
+  "160": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "megapixels": 1,
+      "resolution_steps": 1,
+      "image": [
+        "159",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels"
+  },
+  "161": {
+    "inputs": {
+      "pixels": [
+        "160",
+        0
+      ],
+      "vae": [
+        "140",
+        0
+      ]
+    },
+    "class_type": "VAEEncode"
+  },
+  "163": {
+    "inputs": {
+      "conditioning": [
+        "156",
+        0
+      ],
+      "latent": [
+        "161",
+        0
+      ]
+    },
+    "class_type": "ReferenceLatent"
+  },
+  "164": {
+    "inputs": {
+      "conditioning": [
+        "157",
+        0
+      ],
+      "latent": [
+        "161",
+        0
+      ]
+    },
+    "class_type": "ReferenceLatent"
+  },
+  "165": {
+    "inputs": {
+      "switch": false,
+      "on_false": [
+        "166",
+        0
+      ],
+      "on_true": [
+        "147",
+        0
+      ]
+    },
+    "class_type": "ComfySwitchNode"
+  },
+  "166": {
+    "inputs": {
+      "width": 1024,
+      "height": 1024,
+      "batch_size": 1
+    },
+    "class_type": "EmptyFlux2LatentImage"
+  }
+}

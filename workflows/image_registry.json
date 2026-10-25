@@ -1,0 +1,394 @@
+{
+  "moss": {
+    "name": "Moss Image",
+    "version": 1,
+    "template": "image_moss.json",
+    "output": "10",
+    "sampler": "8",
+    "fields": [
+      {
+        "key": "model",
+        "label": "模型檔名",
+        "type": "string",
+        "node": "1",
+        "input": "unet_name",
+        "default": "moss_image_sft_sinox_int8_convrot.safetensors"
+      },
+      {
+        "key": "prompt",
+        "label": "正向提示詞",
+        "type": "text",
+        "node": "5",
+        "input": "text",
+        "default": ""
+      },
+      {
+        "key": "width",
+        "label": "寬度",
+        "type": "integer",
+        "node": "7",
+        "input": "width",
+        "default": 1280,
+        "min": 64,
+        "max": 8192,
+        "step": 16
+      },
+      {
+        "key": "height",
+        "label": "高度",
+        "type": "integer",
+        "node": "7",
+        "input": "height",
+        "default": 720,
+        "min": 64,
+        "max": 8192,
+        "step": 16
+      },
+      {
+        "key": "steps",
+        "label": "Steps",
+        "type": "integer",
+        "node": "8",
+        "input": "steps",
+        "default": 25,
+        "min": 1,
+        "max": 200,
+        "advanced": true
+      },
+      {
+        "key": "cfg",
+        "label": "CFG",
+        "type": "number",
+        "node": "8",
+        "input": "cfg",
+        "default": 2.5,
+        "min": 0,
+        "max": 100,
+        "step": 0.1,
+        "advanced": true
+      },
+      {
+        "key": "sampler",
+        "label": "Sampler",
+        "type": "string",
+        "node": "8",
+        "input": "sampler_name",
+        "default": "er_sde",
+        "advanced": true
+      },
+      {
+        "key": "scheduler",
+        "label": "Scheduler",
+        "type": "string",
+        "node": "8",
+        "input": "scheduler",
+        "default": "simple",
+        "advanced": true
+      }
+    ],
+    "lora": {
+      "placeholder": "16",
+      "source": [
+        "1",
+        0
+      ]
+    }
+  },
+  "z_turbo": {
+    "name": "Z Image Turbo",
+    "version": 1,
+    "template": "image_z_turbo.json",
+    "output": "9",
+    "sampler": "66",
+    "fields": [
+      {
+        "key": "model",
+        "label": "模型檔名",
+        "type": "string",
+        "node": "62",
+        "input": "unet_name",
+        "default": "z_image_turbo_bf16.safetensors"
+      },
+      {
+        "key": "prompt",
+        "label": "正向提示詞",
+        "type": "text",
+        "node": "63",
+        "input": "text",
+        "default": ""
+      },
+      {
+        "key": "width",
+        "label": "寬度",
+        "type": "integer",
+        "node": "64",
+        "input": "width",
+        "default": 1024,
+        "min": 64,
+        "max": 8192,
+        "step": 16
+      },
+      {
+        "key": "height",
+        "label": "高度",
+        "type": "integer",
+        "node": "64",
+        "input": "height",
+        "default": 1024,
+        "min": 64,
+        "max": 8192,
+        "step": 16
+      },
+      {
+        "key": "steps",
+        "label": "Steps",
+        "type": "integer",
+        "node": "66",
+        "input": "steps",
+        "default": 8,
+        "min": 1,
+        "max": 200,
+        "advanced": true
+      },
+      {
+        "key": "sampler",
+        "label": "Sampler",
+        "type": "string",
+        "node": "66",
+        "input": "sampler_name",
+        "default": "euler",
+        "advanced": true
+      },
+      {
+        "key": "scheduler",
+        "label": "Scheduler",
+        "type": "string",
+        "node": "66",
+        "input": "scheduler",
+        "default": "simple",
+        "advanced": true
+      }
+    ],
+    "lora": {
+      "placeholder": "67",
+      "source": [
+        "62",
+        0
+      ]
+    }
+  },
+  "anima": {
+    "name": "Anima",
+    "version": 1,
+    "template": "image_anima.json",
+    "output": "46",
+    "sampler": "97",
+    "fields": [
+      {
+        "key": "model",
+        "label": "模型檔名",
+        "type": "string",
+        "node": "99",
+        "input": "unet_name",
+        "default": "anima_aestheticV11.safetensors"
+      },
+      {
+        "key": "prompt",
+        "label": "正向提示詞",
+        "type": "text",
+        "node": "98",
+        "input": "text",
+        "default": ""
+      },
+      {
+        "key": "negative",
+        "label": "負向提示詞",
+        "type": "text",
+        "node": "96",
+        "input": "text",
+        "default": "",
+        "optional": true
+      },
+      {
+        "key": "width",
+        "label": "寬度",
+        "type": "integer",
+        "node": "95",
+        "input": "width",
+        "default": 1024,
+        "min": 64,
+        "max": 8192,
+        "step": 16
+      },
+      {
+        "key": "height",
+        "label": "高度",
+        "type": "integer",
+        "node": "95",
+        "input": "height",
+        "default": 1024,
+        "min": 64,
+        "max": 8192,
+        "step": 16
+      },
+      {
+        "key": "steps",
+        "label": "Steps",
+        "type": "integer",
+        "node": "100",
+        "input": "value",
+        "default": 30,
+        "min": 1,
+        "max": 200,
+        "advanced": true
+      },
+      {
+        "key": "cfg",
+        "label": "CFG",
+        "type": "number",
+        "node": "105",
+        "input": "value",
+        "default": 4,
+        "min": 0,
+        "max": 100,
+        "step": 0.1,
+        "advanced": true
+      },
+      {
+        "key": "sampler",
+        "label": "Sampler",
+        "type": "string",
+        "node": "97",
+        "input": "sampler_name",
+        "default": "euler",
+        "advanced": true
+      },
+      {
+        "key": "scheduler",
+        "label": "Scheduler",
+        "type": "string",
+        "node": "97",
+        "input": "scheduler",
+        "default": "simple",
+        "advanced": true
+      }
+    ],
+    "lora": {
+      "placeholder": "109",
+      "source": [
+        "99",
+        0
+      ]
+    }
+  },
+  "flux_klein": {
+    "name": "Flux2 Klein Image Edit",
+    "version": 1,
+    "template": "image_flux_klein.json",
+    "output": "150",
+    "sampler": "158",
+    "fields": [
+      {
+        "key": "model",
+        "label": "模型檔名",
+        "type": "select",
+        "node": "138",
+        "input": "unet_name",
+        "default": "flux-2-klein-4b-fp8.safetensors",
+        "options": [
+          "flux-2-klein-4b-fp8.safetensors",
+          "flux-2-klein-9b-fp8.safetensors"
+        ]
+      },
+      {
+        "key": "prompt",
+        "label": "正向提示詞",
+        "type": "text",
+        "node": "141",
+        "input": "text",
+        "default": ""
+      },
+      {
+        "key": "image",
+        "label": "輸入圖片",
+        "type": "image",
+        "node": "152",
+        "input": "image",
+        "default": null
+      },
+      {
+        "key": "image2",
+        "label": "輸入圖片 2（可省略）",
+        "type": "image",
+        "node": "159",
+        "input": "image",
+        "default": null,
+        "optional": true
+      },
+      {
+        "key": "keep_size",
+        "label": "沿用第一張圖片大小",
+        "type": "boolean",
+        "node": "165",
+        "input": "switch",
+        "default": true
+      },
+      {
+        "key": "width",
+        "label": "自訂寬度",
+        "type": "integer",
+        "node": "166",
+        "input": "width",
+        "default": 1024,
+        "min": 64,
+        "max": 8192,
+        "step": 16,
+        "show_when": {
+          "keep_size": false
+        }
+      },
+      {
+        "key": "height",
+        "label": "自訂高度",
+        "type": "integer",
+        "node": "166",
+        "input": "height",
+        "default": 1024,
+        "min": 64,
+        "max": 8192,
+        "step": 16,
+        "show_when": {
+          "keep_size": false
+        }
+      }
+    ],
+    "model_clip": {
+      "node": "139",
+      "input": "clip_name",
+      "models": {
+        "flux-2-klein-4b-fp8.safetensors": "qwen_3_4b.safetensors",
+        "flux-2-klein-9b-fp8.safetensors": "qwen_3_8b_fp8mixed.safetensors"
+      }
+    },
+    "optional_branch": {
+      "field": "image2",
+      "remove": [
+        "159",
+        "160",
+        "161",
+        "163",
+        "164"
+      ],
+      "rewire": {
+        "163": [
+          "156",
+          0
+        ],
+        "164": [
+          "157",
+          0
+        ]
+      }
+    }
+  }
+}

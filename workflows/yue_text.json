@@ -1,0 +1,209 @@
+{
+  "10": {
+    "inputs": {
+      "filename_prefix": "H3Canvas/output",
+      "format": "mp3",
+      "format.quality": "V0",
+      "audio": [
+        "52",
+        0
+      ]
+    },
+    "class_type": "SaveAudioAdvanced"
+  },
+  "41": {
+    "inputs": {
+      "ckpt_name": "yue2_3b_int8_convrot.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple"
+  },
+  "42": {
+    "inputs": {
+      "style": [
+        "54",
+        0
+      ],
+      "lyrics": [
+        "55",
+        0
+      ],
+      "seed": [
+        "53",
+        0
+      ],
+      "mode": "full",
+      "max_abc_tokens": 8192,
+      "temperature": 0.7,
+      "top_p": 0.9,
+      "top_k": 30,
+      "repetition_penalty": 1.005,
+      "penalty_window": 100,
+      "clip": [
+        "41",
+        1
+      ]
+    },
+    "class_type": "YuE2GenerateABC"
+  },
+  "43": {
+    "inputs": {
+      "preview": "",
+      "source": [
+        "44",
+        0
+      ]
+    },
+    "class_type": "PreviewAny"
+  },
+  "44": {
+    "inputs": {
+      "switch": [
+        "47",
+        0
+      ],
+      "on_false": [
+        "45",
+        0
+      ],
+      "on_true": [
+        "42",
+        0
+      ]
+    },
+    "class_type": "ComfySwitchNode"
+  },
+  "45": {
+    "inputs": {
+      "value": ""
+    },
+    "class_type": "PrimitiveString"
+  },
+  "46": {
+    "inputs": {
+      "style": [
+        "54",
+        0
+      ],
+      "lyrics": [
+        "55",
+        0
+      ],
+      "abc": [
+        "43",
+        0
+      ],
+      "seed": [
+        "53",
+        0
+      ],
+      "mode": "full",
+      "max_duration": 360,
+      "temperature": 1,
+      "top_p": 0.95,
+      "top_k": 100,
+      "repetition_penalty": 1.2,
+      "cfg_scale": 1.0000000000000002,
+      "clip": [
+        "41",
+        1
+      ]
+    },
+    "class_type": "YuE2GenerateMusic"
+  },
+  "47": {
+    "inputs": {
+      "value": false
+    },
+    "class_type": "PrimitiveBoolean"
+  },
+  "48": {
+    "inputs": {
+      "conditioning": [
+        "46",
+        0
+      ]
+    },
+    "class_type": "ConditioningZeroOut"
+  },
+  "49": {
+    "inputs": {
+      "preview": "",
+      "source": [
+        "46",
+        1
+      ]
+    },
+    "class_type": "PreviewAny"
+  },
+  "50": {
+    "inputs": {
+      "seed": [
+        "53",
+        0
+      ],
+      "steps": 32,
+      "cfg": 1,
+      "sampler_name": "dpm_2",
+      "scheduler": "sgm_uniform",
+      "denoise": 1,
+      "model": [
+        "41",
+        0
+      ],
+      "positive": [
+        "46",
+        0
+      ],
+      "negative": [
+        "48",
+        0
+      ],
+      "latent_image": [
+        "51",
+        0
+      ]
+    },
+    "class_type": "KSampler"
+  },
+  "51": {
+    "inputs": {
+      "seconds": [
+        "46",
+        1
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptyYuE2LatentAudio"
+  },
+  "52": {
+    "inputs": {
+      "samples": [
+        "50",
+        0
+      ],
+      "vae": [
+        "41",
+        2
+      ]
+    },
+    "class_type": "VAEDecodeAudio"
+  },
+  "53": {
+    "inputs": {
+      "seed": 818075323613835
+    },
+    "class_type": "SeedNode"
+  },
+  "54": {
+    "inputs": {
+      "value": ""
+    },
+    "class_type": "PrimitiveStringMultiline"
+  },
+  "55": {
+    "inputs": {
+      "value": ""
+    },
+    "class_type": "PrimitiveStringMultiline"
+  }
+}

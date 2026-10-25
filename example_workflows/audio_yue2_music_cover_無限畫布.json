@@ -1,0 +1,976 @@
+{
+  "id": "8946c283-b05c-4bea-84dc-f0ea169054c6",
+  "revision": 0,
+  "last_node_id": 58,
+  "last_link_id": 123,
+  "nodes": [
+    {
+      "id": 47,
+      "type": "CheckpointLoaderSimple",
+      "pos": [
+        2050,
+        -800
+      ],
+      "size": [
+        420,
+        110
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "ckpt_name",
+          "name": "ckpt_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "ckpt_name"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "MODEL",
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            101
+          ]
+        },
+        {
+          "label": "CLIP",
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            98
+          ]
+        },
+        {
+          "label": "VAE",
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            107
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CheckpointLoaderSimple",
+        "models": [
+          {
+            "name": "yue2_3b_int8_convrot.safetensors",
+            "directory": "checkpoints",
+            "url": "https://huggingface.co/Comfy-Org/YuE2/resolve/main/checkpoints/yue2_3b_int8_convrot.safetensors"
+          }
+        ],
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "yue2_3b_int8_convrot.safetensors"
+      ]
+    },
+    {
+      "id": 49,
+      "type": "ConditioningZeroOut",
+      "pos": [
+        3430,
+        -580
+      ],
+      "size": [
+        230,
+        40
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "conditioning",
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 99
+        }
+      ],
+      "outputs": [
+        {
+          "label": "CONDITIONING",
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            103
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ConditioningZeroOut",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 51,
+      "type": "KSampler",
+      "pos": [
+        3960,
+        -650
+      ],
+      "size": [
+        330,
+        270
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "model",
+          "name": "model",
+          "type": "MODEL",
+          "link": 101
+        },
+        {
+          "label": "positive",
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 102
+        },
+        {
+          "label": "negative",
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 103
+        },
+        {
+          "label": "latent_image",
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 104
+        },
+        {
+          "label": "seed",
+          "name": "seed",
+          "type": "INT",
+          "widget": {
+            "name": "seed"
+          },
+          "link": 110
+        },
+        {
+          "label": "steps",
+          "name": "steps",
+          "type": "INT",
+          "widget": {
+            "name": "steps"
+          }
+        },
+        {
+          "label": "cfg",
+          "name": "cfg",
+          "type": "FLOAT",
+          "widget": {
+            "name": "cfg"
+          }
+        },
+        {
+          "label": "sampler_name",
+          "name": "sampler_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "sampler_name"
+          }
+        },
+        {
+          "label": "scheduler",
+          "name": "scheduler",
+          "type": "COMBO",
+          "widget": {
+            "name": "scheduler"
+          }
+        },
+        {
+          "label": "denoise",
+          "name": "denoise",
+          "type": "FLOAT",
+          "widget": {
+            "name": "denoise"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "LATENT",
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            106
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "KSampler",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        42,
+        "fixed",
+        32,
+        1,
+        "dpm_2",
+        "sgm_uniform",
+        1
+      ]
+    },
+    {
+      "id": 52,
+      "type": "EmptyYuE2LatentAudio",
+      "pos": [
+        4170,
+        -180
+      ],
+      "size": [
+        230,
+        90
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "seconds",
+          "name": "seconds",
+          "type": "FLOAT",
+          "widget": {
+            "name": "seconds"
+          },
+          "link": 105
+        },
+        {
+          "label": "batch_size",
+          "name": "batch_size",
+          "type": "INT",
+          "widget": {
+            "name": "batch_size"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "LATENT",
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            104
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "EmptyYuE2LatentAudio",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        120,
+        1
+      ],
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 53,
+      "type": "VAEDecodeAudio",
+      "pos": [
+        4340,
+        -570
+      ],
+      "size": [
+        230,
+        60
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "samples",
+          "name": "samples",
+          "type": "LATENT",
+          "link": 106
+        },
+        {
+          "label": "vae",
+          "name": "vae",
+          "type": "VAE",
+          "link": 107
+        }
+      ],
+      "outputs": [
+        {
+          "label": "AUDIO",
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            121
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecodeAudio",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 46,
+      "type": "MarkdownNote",
+      "pos": [
+        220,
+        -260
+      ],
+      "size": [
+        550,
+        1906.640625
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "# YuE2: Music Cover\n\nCreate a new version of an existing song with YuE2.\n\nThis workflow uses **SheetSage2** to transcribe the melody from the reference audio into an editable ABC score, then uses YuE2 to regenerate the song with a new **Style** and **Lyrics**.\n\n## Input Asset\n\n- [yue2_reference_song.flac](https://raw.githubusercontent.com/Comfy-Org/workflow_templates/refs/heads/main/input/yue2_reference_song.flac)\n\n## Model Links\n\n- [Hugging Face:Comfy-Org/YuE2](https://huggingface.co/Comfy-Org/YuE2)\n- [ModelScope:Comfy-Org/YuE2](https://modelscope.cn/models/Comfy-Org/YuE2)\n\n**checkpoints**\n\n- [yue2_3b_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/YuE2/resolve/main/checkpoints/yue2_3b_int8_convrot.safetensors) (3.69 GB)\n\n**audio_encoders**\n\n- [sheetsage2_bf16.safetensors](https://huggingface.co/Comfy-Org/YuE2/resolve/main/audio_encoders/sheetsage2_bf16.safetensors) (1.29 GB)\n\n\n## Model Storage Location\n\n```\n📂 ComfyUI/\n├── 📂 models/\n│   ├── 📂 checkpoints/\n│   │   └── yue2_3b_int8_convrot.safetensors\n│   └── 📂 audio_encoders/\n│       └── sheetsage2_bf16.safetensors\n```\n\n## How to Use\n\n[Subgraph](https://docs.comfy.org/interface/features/subgraph)\n\n1. Load a reference song in **Audio**.\n2. Describe the new musical direction in **Style**.\n3. Enter the lyrics you want to sing in **Lyrics**.\n4. Run the workflow to generate a new cover version.\n\nThe reference audio provides the melody, while YuE2 creates a new performance and arrangement based on your Style and Lyrics.\n\n## Writing the Style\n\nDescribe the target musical style clearly.\n\nUseful elements include:\n\n- **Genre:** jazz, pop, rock, folk, electronic\n- **Vocals:** warm male vocal, expressive female vocal, soft vocals\n- **Language:** English, Chinese, Japanese, etc.\n- **Tempo:** 90 BPM, slow, upbeat\n- **Instruments:** piano, guitar, bass, drums, strings, synths\n- **Mood:** intimate, energetic, nostalgic, cinematic\n\nExample:\n\n> English, soulful jazz-pop, expressive male vocal, relaxed 88 BPM, Rhodes piano, upright bass, brushed drums, warm saxophone, intimate late-night atmosphere\n\n## Writing Lyrics\n\nUse section tags such as:\n\n    [Verse]\n    Streetlights shimmer on the pavement\n    Midnight breathing soft and slow\n\n    [Chorus]\n    Stay with me until the morning\n    Let the city fade away\n\nYou can use:\n\n`[Verse]` · `[Chorus]` · `[Bridge]` · `[Outro]`\n\nFor better melody matching, keep the new lyrics reasonably close to the original phrasing and syllable count.\n\n## How the Cover Works\n\nThe workflow does not directly use the reference audio as YuE2 conditioning.\n\nInstead:\n\n    Reference Audio\n        ↓\n    SheetSage2\n        ↓\n    Melody ABC\n        ↓\n    YuE2 + Style + Lyrics\n        ↓\n    New Cover Audio\n\nSheetSage2 converts the source recording into a symbolic melody representation. YuE2 then uses that melody as the musical plan for the new cover.\n\n## Tips\n\n- Keep **Style** focused on the target sound, not the original sound.\n- Use **melody-only** planning for most cover tasks.\n- Changing the Style can create a very different arrangement while preserving the melody.\n- Lyrics can be changed, but similar phrasing and syllable counts usually fit the original melody better.\n- For a simple style-transfer test, keep the original lyrics and only change the Style.\n- For a stronger reinterpretation, change both the Style and Lyrics.\n\n## Learn More\n\n- [YuE2 Cover Guide](https://github.com/multimodal-art-projection/YuE/blob/main/docs/covers.md)\n- [YuE2 Music Skill](https://github.com/multimodal-art-projection/YuE/blob/main/skills/yue2-music/SKILL.md)\n- [Generation & Covers Reference](https://github.com/multimodal-art-projection/YuE/blob/main/skills/yue2-music/references/generation-and-covers.md)\n\n## Report Issue\n\nNote: Please update ComfyUI first ([guide](https://docs.comfy.org/installation/update_comfyui)) and prepare required models. Desktop/Cloud updates follow stable releases, so some nightly-supported models may not be available yet.\n\n- Cannot run / runtime errors: [ComfyUI/issues](https://github.com/comfyanonymous/ComfyUI/issues)\n- UI / frontend issues: [ComfyUI_frontend/issues](https://github.com/Comfy-Org/ComfyUI_frontend/issues)\n- Workflow issues: [workflow_templates/issues](https://github.com/Comfy-Org/workflow_templates/issues)\n"
+      ],
+      "color": "#222",
+      "bgcolor": "#000"
+    },
+    {
+      "id": 10,
+      "type": "SaveAudioAdvanced",
+      "pos": [
+        1867.14892578125,
+        -172.6102294921875
+      ],
+      "size": [
+        210,
+        106
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "audio",
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 121
+        },
+        {
+          "label": "filename_prefix",
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          }
+        },
+        {
+          "label": "format",
+          "name": "format",
+          "type": "COMFY_DYNAMICCOMBO_V3",
+          "widget": {
+            "name": "format"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "audio",
+          "name": "audio",
+          "type": "AUDIO",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveAudioAdvanced",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "audio/YuE2_cover",
+        "mp3",
+        "V0"
+      ]
+    },
+    {
+      "id": 50,
+      "type": "PreviewAny",
+      "pos": [
+        3430,
+        -460
+      ],
+      "size": [
+        290.4813232421875,
+        292.73211669921875
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "source",
+          "name": "source",
+          "type": "*",
+          "link": 100
+        }
+      ],
+      "outputs": [
+        {
+          "label": "STRING",
+          "name": "STRING",
+          "type": "STRING"
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 54,
+      "type": "SeedNode",
+      "pos": [
+        3055.89892578125,
+        409.6266174316406
+      ],
+      "size": [
+        270,
+        90
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "seed",
+          "name": "seed",
+          "type": "INT",
+          "widget": {
+            "name": "seed"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "seed",
+          "name": "seed",
+          "type": "INT",
+          "links": [
+            109,
+            110
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SeedNode",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        922060810338310,
+        "randomize"
+      ]
+    },
+    {
+      "id": 56,
+      "type": "AudioEncoderLoader",
+      "pos": [
+        2051.038330078125,
+        -630
+      ],
+      "size": [
+        420,
+        80
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "audio_encoder_name",
+          "name": "audio_encoder_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "audio_encoder_name"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "AUDIO_ENCODER",
+          "name": "AUDIO_ENCODER",
+          "type": "AUDIO_ENCODER",
+          "links": [
+            114
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "AudioEncoderLoader",
+        "models": [
+          {
+            "name": "sheetsage2_bf16.safetensors",
+            "directory": "audio_encoders",
+            "url": "https://huggingface.co/Comfy-Org/YuE2/resolve/main/audio_encoders/sheetsage2_bf16.safetensors"
+          }
+        ],
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "sheetsage2_bf16.safetensors"
+      ]
+    },
+    {
+      "id": 55,
+      "type": "SheetSage2AudioToABC",
+      "pos": [
+        2210.331298828125,
+        -462.3860168457031
+      ],
+      "size": [
+        230,
+        90
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "audio_encoder",
+          "name": "audio_encoder",
+          "type": "AUDIO_ENCODER",
+          "link": 114
+        },
+        {
+          "label": "audio",
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 123
+        },
+        {
+          "label": "mode",
+          "name": "mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "mode"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "abc",
+          "name": "abc",
+          "shape": 6,
+          "type": "STRING",
+          "links": [
+            117
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SheetSage2AudioToABC",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "melody"
+      ]
+    },
+    {
+      "id": 57,
+      "type": "PreviewAny",
+      "pos": [
+        2222.51806640625,
+        -292.84222412109375
+      ],
+      "size": [
+        470,
+        300
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "source",
+          "name": "source",
+          "type": "*",
+          "link": 117
+        }
+      ],
+      "outputs": [
+        {
+          "label": "STRING",
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            118
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 58,
+      "type": "LoadAudio",
+      "pos": [
+        1737.7545166015625,
+        -467.9514465332031
+      ],
+      "size": [
+        274.080078125,
+        136
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "AUDIO",
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            123
+          ]
+        }
+      ],
+      "properties": {
+        "widget_ue_connectable": {},
+        "Node name for S&R": "LoadAudio"
+      },
+      "widgets_values": [
+        "None",
+        null,
+        ""
+      ]
+    },
+    {
+      "id": 48,
+      "type": "YuE2GenerateMusic",
+      "pos": [
+        2740.337646484375,
+        -737.4803466796875
+      ],
+      "size": [
+        435.7980041503906,
+        777.8682861328125
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "clip",
+          "name": "clip",
+          "type": "CLIP",
+          "link": 98
+        },
+        {
+          "label": "style",
+          "name": "style",
+          "type": "STRING",
+          "widget": {
+            "name": "style"
+          }
+        },
+        {
+          "label": "lyrics",
+          "name": "lyrics",
+          "type": "STRING",
+          "widget": {
+            "name": "lyrics"
+          }
+        },
+        {
+          "label": "abc",
+          "name": "abc",
+          "type": "STRING",
+          "widget": {
+            "name": "abc"
+          },
+          "link": 118
+        },
+        {
+          "label": "seed",
+          "name": "seed",
+          "type": "INT",
+          "widget": {
+            "name": "seed"
+          },
+          "link": 109
+        },
+        {
+          "label": "mode",
+          "name": "mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "mode"
+          }
+        },
+        {
+          "label": "max_duration",
+          "name": "max_duration",
+          "type": "FLOAT",
+          "widget": {
+            "name": "max_duration"
+          }
+        },
+        {
+          "label": "temperature",
+          "name": "temperature",
+          "type": "FLOAT",
+          "widget": {
+            "name": "temperature"
+          }
+        },
+        {
+          "label": "top_p",
+          "name": "top_p",
+          "type": "FLOAT",
+          "widget": {
+            "name": "top_p"
+          }
+        },
+        {
+          "label": "top_k",
+          "name": "top_k",
+          "type": "INT",
+          "widget": {
+            "name": "top_k"
+          }
+        },
+        {
+          "label": "repetition_penalty",
+          "name": "repetition_penalty",
+          "type": "FLOAT",
+          "widget": {
+            "name": "repetition_penalty"
+          }
+        },
+        {
+          "label": "cfg_scale",
+          "name": "cfg_scale",
+          "shape": 7,
+          "type": "FLOAT",
+          "widget": {
+            "name": "cfg_scale"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "CONDITIONING",
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            102,
+            99
+          ]
+        },
+        {
+          "label": "seconds",
+          "name": "seconds",
+          "type": "FLOAT",
+          "links": [
+            105,
+            100
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "YuE2GenerateMusic",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "",
+        "",
+        "",
+        164747808471529,
+        "randomize",
+        "melody",
+        360,
+        1,
+        0.95,
+        100,
+        1.2,
+        1
+      ]
+    }
+  ],
+  "links": [
+    [
+      98,
+      47,
+      1,
+      48,
+      0,
+      "CLIP"
+    ],
+    [
+      99,
+      48,
+      0,
+      49,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      100,
+      48,
+      1,
+      50,
+      0,
+      "FLOAT"
+    ],
+    [
+      101,
+      47,
+      0,
+      51,
+      0,
+      "MODEL"
+    ],
+    [
+      102,
+      48,
+      0,
+      51,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      103,
+      49,
+      0,
+      51,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      104,
+      52,
+      0,
+      51,
+      3,
+      "LATENT"
+    ],
+    [
+      105,
+      48,
+      1,
+      52,
+      0,
+      "FLOAT"
+    ],
+    [
+      106,
+      51,
+      0,
+      53,
+      0,
+      "LATENT"
+    ],
+    [
+      107,
+      47,
+      2,
+      53,
+      1,
+      "VAE"
+    ],
+    [
+      109,
+      54,
+      0,
+      48,
+      4,
+      "INT"
+    ],
+    [
+      110,
+      54,
+      0,
+      51,
+      4,
+      "INT"
+    ],
+    [
+      114,
+      56,
+      0,
+      55,
+      0,
+      "AUDIO_ENCODER"
+    ],
+    [
+      117,
+      55,
+      0,
+      57,
+      0,
+      "STRING"
+    ],
+    [
+      118,
+      57,
+      0,
+      48,
+      3,
+      "STRING"
+    ],
+    [
+      121,
+      53,
+      0,
+      10,
+      0,
+      "AUDIO"
+    ],
+    [
+      123,
+      58,
+      0,
+      55,
+      1,
+      "AUDIO"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "VHS_KeepIntermediate": true,
+    "links_added_by_ue": [],
+    "VHS_MetadataImage": true,
+    "ue_links": [],
+    "pixaromaGroups": [],
+    "0246.VERSION": [
+      0,
+      0,
+      4
+    ],
+    "VHS_latentpreviewrate": 0,
+    "frontendVersion": "1.23.0",
+    "VHS_latentpreview": false,
+    "ds": {
+      "scale": 0.6588450000000003,
+      "offset": [
+        -2003.331209129241,
+        910.1648670852447
+      ]
+    },
+    "KKvideo_latentpreview": false,
+    "KKvideo_latentpreviewrate": 0
+  },
+  "version": 0.4
+}
