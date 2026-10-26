@@ -21,7 +21,8 @@ def clean(category, spec):
     if category == 'video':
         allowed = set(Generation.model_fields) - {'prompt','prompt_source','references','motion_context','context_run_id','context_video_asset_id'}
         result = {k:v for k,v in spec.items() if k in allowed}
-        Generation.model_validate({**result, 'prompt':'validation'})
+        validated = Generation.model_validate({**result, 'prompt':'validation'})
+        if 'noise_seed' in result: result['noise_seed']=validated.noise_seed
         return result
     registry = image_workflows.REGISTRY if category == 'image' else audio_workflows.REGISTRY
     entry = registry.get(spec.get('workflow'))

@@ -71,6 +71,22 @@ Colab 文件可在 Google Colab 開啟，依筆記本設定執行環境與認證
 
 **延續影片必須從導演台按「生成此段」。直接按影片節點的「生成影片」不會自動接續前段。** AI 透過 API 提交 motion context 時會自動建立／更新導演台；重新載入專案即可查看。
 
+## Noise seed 與 AI 提示詞檔案
+
+影片節點的高級功能可填寫 **Noise seed**；留空則每次隨機。生成結果、歷史與導演台顯示此次實際 seed，可按「沿用此 Noise seed」或套用歷史版本。API 使用 `spec.noise_seed` 十進位字串（0–18446744073709551615），回傳 `seed` 亦為字串，避免 JavaScript 大整數精度損失。相同 seed 不保證不同模型、參數或環境的結果一致。RH 幣只適用 RunningHub；本機 ComfyUI 不需回傳用量欄位，本機顯示的是包含排隊及儲存的任務總耗時。
+
+`prompts/` 是 AI 撰寫提示詞模板的來源：放入 UTF-8 `.md` 或 `.txt`，每個檔案為一個模板，檔名（不含副檔名）為顯示名稱，全文作為模板內容。已附上 H3、圖片、音樂及 TTS 範例；依用途自行選擇。這些是給 AI 的撰寫規則，不是生成工作流。此資料夾與「節點參數模板」（仍存本機 data）不同。
+
+在 AI 撰寫設定新增／編輯後按「儲存設定與模板」，會寫回 `prompts/`；改名稱會更名檔案。刪除與覆寫前的舊內容備份在 `prompts/.trash/`，不納入 Git 或 release。也可直接用文字編輯器修改，重新開啟設定或提示詞助手即可讀取；若外部檔案已變更，儲存會要求重新載入以避免覆蓋。預設模板選擇仍存本機設定。原程式內建模板已移除，舊 SQLite 模板不再作為來源；歷史草稿保存的模板快照仍保留。發布時會包含 `prompts/` 的目前內容，請勿放入密鑰或私人劇情。
+
+## 進階：修改未開放的模型與參數
+
+1. 先備份要編輯的 JSON。一般影片使用 `workflow_template.json`；MP4 motion context 使用 `workflows/video_motion_mp4.json`。若要兩種影片模式都生效，須分別修改。
+2. 圖片／音訊請先查看 `workflows/image_registry.json`、`workflows/audio_registry.json`，找到功能的 `template`；未指定 template 的音訊使用對應 `<功能 ID>.json`。修改執行 JSON 中載入節點的實際 text encoder／VAE 檔名或其他固定輸入；服務端必須已安裝相容模型與節點。`example_workflows/` 只是分享範例，修改它不會影響畫布執行。
+3. 保留節點 ID、class_type、連線及輸入型別。介面／API 已開放的參數會在編譯時覆寫 JSON 預設值，應從介面或節點模板設定；FLUX encoder 的自動配對由 image registry 的 `model_clip` 控制，也需同步調整。
+4. 若換工作流導致節點 ID 或輸入名稱改變，更新對應 registry 映射（影片另有 `video_registry.json`）；新增可調欄位可能需要同步修改 schema、編譯器和介面。只換現有固定載入節點的檔名通常不需改程式。
+5. 修改後重啟服務。先用 `/workflow/preview` 檢查實際產生的工作流，再自行決定是否提交付費生成；預覽不證明遠端模型存在。RunningHub 仍需設定工作流 ID，本機 ComfyUI 不需要。應用程式會提交編譯後的圖，因此未被編譯器覆寫的固定輸入會採用你修改的執行 JSON。
+
 ## 授權與致謝
 
 本專案程式碼採既有 [MIT License](LICENSE)，不會把模型、節點、依賴或生成內容重新授權為 MIT。以下依 2026-10-25 查閱的官方資料摘要，仍應核對實際權重版本與服務條款；本專案不散布模型權重。依賴聲明見 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 與 `licenses/`。

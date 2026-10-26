@@ -103,6 +103,7 @@ type Spec = {
   motion_context?: boolean;
   context_run_id?: string | null;
   context_video_asset_id?: string | null;
+  noise_seed?: string | null;
   _template_id?: string;
   _template_name?: string;
   lora_strength?: number;
@@ -144,6 +145,7 @@ type Run = {
   outputs: Asset[];
   error?: string;
   created_at: number;
+  finished_at?: number;
   seed: string;
   remote_id?: string;
   usage?: {consumeCoins?: string | number | null; taskCostTime?: string | number | null};
@@ -167,7 +169,7 @@ const defaults = (config: Config): Spec => ({
   duration: 15,
   head_chunks: null,
   chunks: null,
-  lora_strength: 1, extra_loras: [],
+  noise_seed: null, lora_strength: 1, extra_loras: [],
   lora_enabled: true, shift_enabled: null, shift_video: 6, shift_audio: 3, low_vram_enabled: false, steps: 8, sampler: "euler", scheduler: "beta",
   ...config.video_defaults,
 });
@@ -237,9 +239,10 @@ function Media({asset,controls=false,hover=false}:{asset:Asset;controls?:boolean
   return asset.kind==='image'?<img src={asset.url} alt={asset.name} draggable={false}/>:asset.kind==='video'?<HoverVideo asset={asset} controls={controls} hover={hover}/>:controls?<AudioPlayer src={asset.url} label={asset.name}/>:<div className="audio-art"><Music2 size={36}/><div className="wave">{Array.from({length:28},(_,i)=><i key={i} style={{height:12+Math.sin(i*2.3)**2*36}}/>)}</div>{controls&&<audio src={asset.url} controls/>}</div>;
 }
 function Usage({run}: {run:Run}) {
-  if(run.spec.provider!=='runninghub')return null;
-  const seconds=run.usage?.taskCostTime;
-  return <div className="usage-line">{run.usage?.consumeCoins != null ? `${run.usage.consumeCoins} RH 幣` : 'RH 幣：尚未回傳'} · {seconds != null ? `${seconds} 秒（${Math.floor(Number(seconds)/60)} 分 ${Number(seconds)%60} 秒）` : '耗時：尚未回傳'}</div>;
+  const remote=run.spec.provider==='runninghub';
+  const seconds=remote?run.usage?.taskCostTime:run.finished_at!=null?Math.max(0,Math.round(run.finished_at-run.created_at)):null;
+  const video=!(run.spec as any).kind;
+  return <div className="usage-line">{remote&&<span>{run.usage?.consumeCoins != null ? `${run.usage.consumeCoins} RH 幣` : 'RH 幣：尚未回傳'} · </span>}{seconds!=null?`${seconds} 秒`:'耗時：尚未回傳'}{!remote&&seconds!=null&&'（本機任務總耗時）'}{video&&run.seed!=null&&<div className="seed-result">Noise seed：<code>{run.seed}</code></div>}</div>;
 }
 function CanvasCard({ id, data, selected }: NodeProps<CardNode>) {
   const ctx = useContext(actions),
@@ -248,7 +251,7 @@ function CanvasCard({ id, data, selected }: NodeProps<CardNode>) {
   const active = run && activeStatuses.includes(run.status);
   const promptEdge=ctx.edges.find(e=>e.target===id&&e.targetHandle==='prompt');
   const promptSource=ctx.nodes.find(n=>n.id===promptEdge?.source);
-  if(data.kind==="director")return <DirectorNode id={id} data={data} selected={selected} ctx={ctx}/>;
+  if(data.kind==="director")return <DirectorNode id={id} data={data} selected={selected} ctx={ctx} Usage={Usage}/>;
   if(data.kind==="imagegen")return <ImageNode id={id} data={data} selected={selected} ctx={ctx} Media={Media} Usage={Usage}/>;
   if(data.kind==="music"||data.kind==="tts")return <AudioNode id={id} data={data} selected={selected} ctx={ctx} Media={Media} Usage={Usage}/>;
   return (
@@ -329,9 +332,9 @@ function CanvasCard({ id, data, selected }: NodeProps<CardNode>) {
           {ctx.runs.filter(r=>r.node_id===id).sort((a,b)=>b.created_at-a.created_at).map(r=><div className="audio-history" key={r.id}>
             <p>{new Date(r.created_at*1000).toLocaleString('zh-TW')} · {r.stage}</p>
             {r.outputs.map(a=><div key={a.id}><Media asset={a} controls/><div className="template-actions"><button onClick={()=>ctx.preview(a)}>放大查看</button><button onClick={()=>ctx.audioOutput(id,a.id)}>顯示此版本</button><a href={a.url} download={a.name}>下載</a></div></div>)}
-            <Usage run={r}/>{r.error&&<p className="error-message">{r.error}</p>}
+            <Usage run={r}/><button onClick={()=>ctx.editSpec(id,{noise_seed:r.seed})}>沿用此 Noise seed</button>{r.error&&<p className="error-message">{r.error}</p>}
             <details><summary>提示詞與參數</summary><textarea readOnly rows={5} value={r.compiled?.prompt||r.spec.prompt}/><p>{r.spec.duration} 秒 · {r.spec.megapixels} MP · {r.spec.steps??8} steps · {r.spec.sampler??'euler'} / {r.spec.scheduler??'beta'}</p><p>{r.spec.model}</p></details>
-            <button onClick={()=>ctx.restoreVideo(id,r.spec)}>套用此版提示詞與參數</button>
+            <button onClick={()=>ctx.restoreVideo(id,{...r.spec,noise_seed:r.seed})}>套用此版提示詞與參數</button>
           </div>)}
           {!ctx.runs.some(r=>r.node_id===id)&&<p className="help">尚無生成紀錄。</p>}
         </details>
@@ -359,7 +362,7 @@ function CanvasCard({ id, data, selected }: NodeProps<CardNode>) {
           )}
         </div>
       )}
-      {selected && run && <Usage run={run}/>}
+      {selected && run && <><Usage run={run}/>{data.kind==='generation'&&<button className="nodrag" onClick={()=>ctx.editSpec(id,{noise_seed:run.seed})}>沿用此次 Noise seed</button>}</>}
       {(selected || data.kind === "text" || asset?.kind==='audio') && <footer className="nodrag" onClick={(event) => event.stopPropagation()}>
         <button title="複製節點與連線" onClick={() => ctx.duplicate(id)}>
           <Copy size={14} />

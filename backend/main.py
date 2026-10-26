@@ -497,7 +497,8 @@ async def start_run(body: RunRequest):
     assets = assets_for(body.spec)
     if any(not library.belongs(a, body.project_id) or a.get('deleted') for a in assets.values()):
         raise ValueError('引用素材不屬於此專案或已刪除，請先匯入專案素材。')
-    seed = secrets.randbits(63)
+    seed = int(body.spec.noise_seed) if isinstance(body.spec,Generation) and body.spec.noise_seed is not None else secrets.randbits(63)
+    if isinstance(body.spec,Generation): body.spec=body.spec.model_copy(update={'noise_seed':str(seed)})
     compiled = compile_spec(body.spec, assets, seed=seed)
     settings = db.settings()
     is_motion = isinstance(body.spec,Generation) and body.spec.motion_context

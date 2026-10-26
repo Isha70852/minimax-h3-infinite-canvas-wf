@@ -39,6 +39,7 @@ export function AdvancedSettings({spec,config,onChange}:any) {
   return <details className="advanced-settings nodrag nowheel" onDoubleClick={e=>e.stopPropagation()}>
     <summary>高級功能 · LoRA、Shift、採樣與顯存</summary>
     <div className="advanced-body">
+      <label>Noise seed（留空＝隨機）<input aria-label="Noise seed" type="text" inputMode="numeric" placeholder="留空每次隨機；或貼上歷史 seed" value={spec.noise_seed??''} onChange={e=>{if(/^[0-9]*$/.test(e.target.value))onChange({noise_seed:e.target.value||null});}}/></label><p className="help">範圍 0–18446744073709551615。相同 seed 仍需配合相同模型、素材及參數；不保證不同環境的輸出完全一致。</p>
       <label className="check-row"><input type="checkbox" checked={enabled} onChange={e=>onChange({lora_enabled:e.target.checked})}/>啟用 LoRA 與 Shift</label>
       <fieldset disabled={!enabled}>
         <label>主要 LoRA 強度<NumberInput min={-20} max={20} step={.1} value={spec.lora_strength??1} onValueChange={(n:number)=>onChange({lora_strength:n})}/></label>

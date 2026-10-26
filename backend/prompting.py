@@ -22,14 +22,14 @@ from PIL import Image
 from pydantic import BaseModel, Field, PrivateAttr
 from . import storage as db, library, chatgpt_auth
 from .workflow import Generation, ROOT, ordered_references, translate_prompt
-from .prompt_template import DEFAULT_TEMPLATE
+from . import prompt_files
 
 router = APIRouter(prefix='/api/prompt-assistant')
 workers = {}
 
 
 class Template(BaseModel):
-    id: str = Field(min_length=1, max_length=100)
+    id: str = Field(min_length=1, max_length=240)
     name: str = Field(min_length=1, max_length=120)
     content: str = Field(min_length=1, max_length=60000)
 
@@ -41,7 +41,8 @@ class AssistantSettings(BaseModel):
     api_key: str | None = None
     clear_api_key: bool = False
     default_template_id: str = ''
-    templates: list[Template] = Field(default_factory=lambda: [Template(id='characters', name='模板1 - 只有人物設定圖', content=DEFAULT_TEMPLATE)], max_length=30)
+    templates: list[Template] | None = Field(default=None, max_length=200)
+    templates_revision: str | None = None
 
 
 def settings():
@@ -50,6 +51,9 @@ def settings():
         value['provider'] = 'chatgpt'
         value['model'] = ''
     value['model'] = value.get('model_preferences', {}).get(value['provider'], value['model'])
+    value['templates'],value['templates_revision']=prompt_files.snapshot()
+    if value.get('default_template_id') not in {t['id'] for t in value['templates']}:
+        value['default_template_id']=value['templates'][0]['id'] if value['templates'] else ''
     return value
 
 
@@ -80,12 +84,12 @@ def save_settings(body: AssistantSettings):
         raise ValueError('LLM 服務網址格式錯誤。')
     if body.provider == 'lmstudio' and parsed.hostname not in ('localhost', '127.0.0.1', '::1'):
         raise ValueError('LM Studio 預設僅連線本機；遠端服務請選 API。')
-    if len({t.id for t in body.templates}) != len(body.templates):
-        raise ValueError('模板 ID 不可重複。')
-    value = {**settings(), **body.model_dump(exclude_none=True, exclude={'clear_api_key'})}
+    value = {**settings(), **body.model_dump(exclude_none=True, exclude={'clear_api_key','templates','templates_revision'})}
     if body.clear_api_key: value['api_key'] = ''
-    if value['default_template_id'] not in {t.id for t in body.templates}:
-        value['default_template_id'] = body.templates[0].id if body.templates else ''
+    if body.templates is not None:
+        value['default_template_id']=prompt_files.save([t.model_dump() for t in body.templates],body.templates_revision,body.default_template_id)
+    value.pop('templates',None)
+    value.pop('templates_revision',None)
     value['model_preferences'] = {**value.get('model_preferences', {}), body.provider: body.model}
     db.put('prompt_settings', 'default', value)
     return public_settings()
@@ -370,6 +374,8 @@ class ModelPreference(BaseModel):
 @router.put('/model-preference')
 def model_preference(body: ModelPreference):
     value=settings()
+    value.pop('templates',None)
+    value.pop('templates_revision',None)
     choices=value.get('model_preferences', {})
     choices[body.provider]=body.model
     db.put('prompt_settings','default',{**value,'model_preferences':choices,'provider':body.provider,'model':body.model})

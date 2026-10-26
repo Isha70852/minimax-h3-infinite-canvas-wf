@@ -5,7 +5,7 @@ export function PromptPanel({projectId,nodeId,api,getSpec,saveProject,onClose,on
   const [templateMode,setTemplateMode]=useState('saved'),[customTemplate,setCustomTemplate]=useState(''),[historyIds,setHistoryIds]=useState<string[]>([]),[history,setHistory]=useState<any[]>([]),[endingNotes,setEndingNotes]=useState('');
   const [includeTemplates,setIncludeTemplates]=useState(true);
   const [jobs,setJobs]=useState<any[]>([]),[active,setActive]=useState<any>(null),[result,setResult]=useState(''),[busy,setBusy]=useState(false);
-  useEffect(()=>{api('/prompt-assistant/settings').then((c:any)=>{setConfig({...c,api_key:''});setTemplateId(c.default_template_id||c.templates[0]?.id||'');}).catch((e:any)=>notify(e.message));},[]);
+  useEffect(()=>{api('/prompt-assistant/settings').then((c:any)=>{setConfig({...c,api_key:''});setTemplateId(c.default_template_id||c.templates[0]?.id||'');if(!c.templates.length)setTemplateMode('none');}).catch((e:any)=>notify(e.message));},[]);
   useEffect(()=>{let stop=false; const poll=()=>api('/prompt-assistant/drafts?project_id='+projectId+'&node_id='+nodeId).then((j:any[])=>{if(stop)return;setJobs(j);setActive((a:any)=>{const next=j.find(x=>x.id===a?.id);if(next&&a.status==='running'&&next.status!=='running'){if(next.result)setResult(next.result);if(next.error)notify(next.error);}return next||a||j.find(x=>x.status==='running')||null;});}).catch((e:any)=>{if(!stop)notify(e.message);});poll();const timer=setInterval(poll,4000);return()=>{stop=true;clearInterval(timer);};},[projectId,nodeId]);
   useEffect(()=>{
     if(!active?.id||active.status!=='running')return;

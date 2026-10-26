@@ -67,3 +67,9 @@ These are generation parameters, separate from AI writing-instruction templates.
 Video `lora_strength` adjusts the main LoRA; `extra_loras:[{name,strength,enabled}]` loads additional LoRAs in order. `lora_enabled:false` disables the entire chain and shift. Image LoRA lists retain their existing `loras` schema.
 
 Motion-context submissions automatically create/update a director node and its segment list in the project, including the preceding run's node when present. GET the project again before every subsequent PUT so you preserve the new director and fresh `updated_at`. Reload the browser project to see it. Branching from an earlier segment creates a separate director chain. In the UI, continuation must use the director's **生成此段** action; the standalone node's generation button starts an independent clip.
+
+## Reusing video noise seeds
+
+Set `spec.noise_seed` to a decimal **string** in `0..18446744073709551615`, e.g. `"1234567890123456789"`. Omit it or use null/empty for a fresh random seed (unless a selected node preset supplies one). Read the actual `seed` string from the run result and pass that exact string to a subsequent request; do not convert it through JavaScript Number. Video run specs also record the resolved seed. Preview honors an explicit seed without generating media. Image/audio seed semantics are unchanged. RH billing (`usage.consumeCoins`, `usage.taskCostTime`) is optional and RunningHub-only; local ComfyUI results may omit usage entirely. Use `finished_at-created_at` only as total local elapsed time, not GPU time.
+
+AI writing templates now come from the user's `prompts/*.md` and `prompts/*.txt` files. Discover current IDs/content via `/catalog.prompt_templates`; IDs are filenames including the extension, not the removed built-in `characters` ID. Do not assume a specific template exists. Select a suitable saved template or use the existing custom/none modes. Node parameter presets and AI writing templates remain distinct.

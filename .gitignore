@@ -30,3 +30,7 @@ skills/h3-prompt-writing/
 
 # Local agent guidance
 AGENTS.md
+
+# Recoverable prompt edits
+prompts/.trash/
+prompts/.*.tmp

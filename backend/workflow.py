@@ -5,7 +5,7 @@ import re
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 ROOT = Path(__file__).resolve().parents[1]
 VIDEO_REGISTRY = json.loads((ROOT/'workflows/video_registry.json').read_text(encoding='utf-8'))
@@ -26,6 +26,16 @@ class VideoLoRA(BaseModel):
 
 
 class Generation(BaseModel):
+    noise_seed: str | None = Field(default=None, description='Decimal uint64 string; null/empty selects a fresh random seed. Use a string to avoid JavaScript precision loss.')
+
+    @field_validator('noise_seed', mode='before')
+    @classmethod
+    def valid_seed(cls, value):
+        if value is None or value=='': return None
+        if isinstance(value,bool) or not isinstance(value,(str,int)): raise ValueError('Noise seed 必須是十進位整數字串。')
+        text=str(value).strip()
+        if not re.fullmatch(r'[0-9]{1,20}',text) or int(text)>18446744073709551615: raise ValueError('Noise seed 範圍為 0–18446744073709551615。')
+        return str(int(text))
     motion_context: bool = False
     context_run_id: str | None = None
     context_video_asset_id: str | None = None
@@ -101,6 +111,7 @@ def translate_prompt(prompt, refs):
 
 
 def compile_workflow(spec: Generation, assets: dict, filenames: dict | None = None, seed: int = 0):
+    if spec.noise_seed is not None: seed=int(spec.noise_seed)
     if spec.aspect_ratio not in ASPECTS:
         raise ValueError('不支援的畫面比例。')
     refs = ordered_references(spec, assets)

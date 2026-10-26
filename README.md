@@ -71,6 +71,22 @@ Configure a video, image, music or TTS node, then expand **Node templates** to s
 
 **For continuation, click Generate this segment in the director. Generate video on an individual node does not automatically continue the previous segment.** API motion-context submissions create/update a director automatically; reload the project to see it.
 
+## Noise seeds and AI prompt files
+
+Video advanced settings accept a **Noise seed**; leave it empty for a new random seed. Results, history and directors show the actual seed, with actions to reuse it. The API accepts `spec.noise_seed` as a decimal string (0–18446744073709551615) and returns `seed` as a string to preserve integer precision. Equal seeds do not guarantee equal results across models, settings or environments. RH coins apply only to RunningHub. Local ComfyUI needs no billing fields; its displayed elapsed time includes queueing and output storage.
+
+`prompts/` supplies AI writing templates. Each UTF-8 `.md` or `.txt` file becomes one template: its filename stem is the display name and its full text is the instruction content. Included examples cover H3, images, music and TTS; choose one appropriate to your task. These instructions are separate from generation workflow graphs and node parameter presets (which remain in local data).
+
+**Save settings and templates** writes edits to `prompts/`; changing a template name renames its file. Previous content from edits/deletions is retained in `prompts/.trash/`, excluded from Git and releases. You may also edit files directly and reopen settings/the prompt assistant to reload them. A stale save is rejected if files changed externally. The default selection remains in local settings. The old code-bundled template is removed and SQLite templates are no longer the source; historical draft snapshots remain intact. Current prompt files are published in releases, so keep credentials and private scene material out of this folder.
+
+## Advanced: unexposed models and parameters
+
+1. Back up the JSON you will edit. Normal video uses `workflow_template.json`; MP4 motion context uses `workflows/video_motion_mp4.json`. Edit both when a change should apply to both modes.
+2. For images/audio, find the function's `template` in `workflows/image_registry.json` or `workflows/audio_registry.json`; audio entries without a template use `<function ID>.json`. In the runtime graph, edit the relevant loader's actual text-encoder/VAE filename or other fixed input. Compatible weights and nodes must exist on the provider. Editing `example_workflows/` alone does not change the runtime.
+3. Preserve node IDs, class types, links and input types. Exposed UI/API parameters overwrite graph defaults during compilation; change those through the UI or node presets. FLUX encoder pairing also uses image registry `model_clip`, which must be updated accordingly.
+4. A workflow replacement that changes node IDs/input names requires registry updates (including `video_registry.json` for video). Exposing new controls may require schema/compiler/UI changes. Changing only a fixed loader filename usually does not.
+5. Restart after edits. Inspect `/workflow/preview` before deciding to spend provider credits; preview does not verify remote model availability. RunningHub still needs its configured workflow ID; local ComfyUI does not. The app submits the compiled graph, so fixed inputs not overridden by the compiler use your edited runtime JSON.
+
 ## License and acknowledgements
 
 Project code uses the repository's [MIT License](LICENSE). This does **not** relicense model weights, custom nodes, dependencies or outputs. Summaries below reflect upstream pages checked on 2026-10-25; exact checkpoint licenses and provider terms prevail. No weights are distributed. See [third-party notices](THIRD_PARTY_NOTICES.md) and `licenses/` for dependency notices.

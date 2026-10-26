@@ -1763,3 +1763,7 @@ main {
 .video-node-history { margin-top:12px; max-height:520px; overflow:auto; }
 .video-node-history video { width:100%; max-height:280px; border-radius:8px; }
 .video-node-history textarea { width:100%; resize:vertical; }
+
+.node-template-bar .preset-check, .template-editor > .preset-check { display:flex; flex-direction:row; align-items:center; gap:8px; white-space:nowrap; }
+.preset-check input[type="checkbox"] { width:18px; height:18px; flex:0 0 18px; margin:0; }
+.seed-result { overflow-wrap:anywhere; user-select:text; }
