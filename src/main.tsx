@@ -1,3 +1,4 @@
+import {TemplateContext,TemplateBar,TemplateManager,defaultTemplate} from './NodeTemplates';
 import React, {
   useState,
   useEffect,
@@ -91,13 +92,15 @@ type Asset = {
   favorite?: boolean;
   use_count?: number;
 };
-type Config = { models: string[]; loras: string[]; aspects: string[]; model_profiles?: any[]; audio_workflows?: any[]; image_workflows?: any[]; video_defaults?: Partial<Spec> };
+type Config = { node_templates?: any[]; models: string[]; loras: string[]; aspects: string[]; model_profiles?: any[]; audio_workflows?: any[]; image_workflows?: any[]; video_defaults?: Partial<Spec> };
 type Spec = {
   provider: string;
   prompt: string;
   mode: "T2VA" | "FL2VA" | "Ref2VA";
   model: string;
   lora: string;
+  lora_strength?: number;
+  extra_loras?: {name:string;strength:number;enabled:boolean}[];
   megapixels: number;
   aspect_ratio: string;
   duration: number;
@@ -299,7 +302,7 @@ function CanvasCard({ id, data, selected }: NodeProps<CardNode>) {
         )}
       </div>
       {data.kind === "generation" && selected && data.spec && ctx.config && <div className="node-composer nodrag nowheel" onDoubleClick={e=>e.stopPropagation()}>
-        <div className="composer-modes">{Object.entries(modeNames).map(([mode,label])=><button key={mode} className={data.spec!.mode===mode?'active':''} onClick={()=>ctx.editSpec(id,{mode:mode as Spec['mode']})}>{label}</button>)}</div>
+        <TemplateBar category="video" spec={data.spec} onApply={(spec:any)=>ctx.editSpec(id,spec)}/><div className="composer-modes">{Object.entries(modeNames).map(([mode,label])=><button key={mode} className={data.spec!.mode===mode?'active':''} onClick={()=>ctx.editSpec(id,{mode:mode as Spec['mode']})}>{label}</button>)}</div>
         <div className="composer-refs">{referenceRows(id,ctx.edges,ctx.assets).map((r:any)=><button key={r.edge.id} title={r.alias+' · 點擊取消引用 · '+r.asset.name} onClick={()=>ctx.removeReference(r.edge.id)}><Media asset={r.asset}/><span>{r.alias}</span></button>)}<button title="從專案素材加入" onClick={()=>ctx.pickReferences(id)}><Plus size={20}/></button></div>
         <label className="prompt-source-select">提示詞來源<select value={promptSource?.id||''} onChange={e=>ctx.bindAudio(id,'prompt',e.target.value)}><option value="">直接輸入</option>{ctx.nodes.filter(n=>n.data.kind==='text').map(n=><option key={n.id} value={n.id}>{n.data.label} · {(n.data.text||'').slice(0,32)}</option>)}</select></label>
         <PromptInput disabled={!!promptSource} aria-label="節點提示詞" placeholder="描述想生成的內容，使用 @圖片1 引用素材…" value={promptSource?.data.text??data.spec.prompt} onValueChange={(value:string)=>ctx.editSpec(id,{prompt:value})}/>
@@ -372,6 +375,7 @@ function CanvasCard({ id, data, selected }: NodeProps<CardNode>) {
 const nodeTypes = { card: CanvasCard };
 function App() {
   const flow = useReactFlow<CardNode>();
+  const [templatesOpen,setTemplatesOpen]=useState(false);
   const [config, setConfig] = useState<Config | null>(null),
     [project, setProject] = useState<Project | null>(null),
     [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
@@ -630,7 +634,7 @@ function App() {
         label:
           "影片生成 " +
           (nodes.filter((n) => n.data.kind === "generation").length + 1),
-        spec: { ...defaults(config), ...(assetId?{mode:"Ref2VA" as const}:{}) },
+        spec: { ...defaultTemplate(config,"video",defaults(config)), ...(assetId?{mode:"Ref2VA" as const}:{}) },
       },
     };
     dirty();
@@ -644,7 +648,7 @@ function App() {
   function addSegment(owner:string){
     const parent=nodes.find(n=>n.id===owner);if(!parent||!config)return;
     const ids=(parent.data.segments||[]) as string[], previous=nodes.find(n=>n.id===ids.at(-1)),id=uid();
-    const spec={...defaults(config),...(previous?.data.spec||{}),motion_context:false,context_run_id:null,context_video_asset_id:null};
+    const spec={...defaultTemplate(config,"video",defaults(config)),...(previous?.data.spec||{}),motion_context:false,context_run_id:null,context_video_asset_id:null};
     dirty();setNodes(old=>[...old.map(n=>n.id===owner?{...n,data:{...n.data,segments:[...ids,id]}}:n),{id,type:'card',position:{x:parent.position.x+600,y:parent.position.y+ids.length*300},data:{kind:'generation',label:'導演台第 '+(ids.length+1)+' 段',spec}}]);
     if(previous)setEdges(old=>[...old,...old.filter(e=>e.target===previous.id&&e.targetHandle!=='prompt').map(e=>({...structuredClone(e),id:uid(),target:id}))]);
   }
@@ -652,11 +656,11 @@ function App() {
     const definition=config?.audio_workflows?.find(d=>d.category===category);
     if(!definition)return;
     const id=uid();dirty();
-    setNodes(old=>[...old,{id,type:'card',position:position||flow.screenToFlowPosition({x:window.innerWidth/2,y:200}),style:{width:360,height:250},data:{kind:category,label:category==='music'?'音樂生成':'語音生成',audio_spec:{kind:'audio',provider:config?.video_defaults?.provider||'comfyui',workflow:definition.id,values:Object.fromEntries(definition.fields.filter((f:any)=>f.type!=='audio').map((f:any)=>[f.key,f.default??''])),audio_asset_id:null}}}]);setSelected(id);
+    setNodes(old=>[...old,{id,type:'card',position:position||flow.screenToFlowPosition({x:window.innerWidth/2,y:200}),style:{width:360,height:250},data:{kind:category,label:category==='music'?'音樂生成':'語音生成',audio_spec:defaultTemplate(config,category,{kind:'audio',provider:config?.video_defaults?.provider||'comfyui',workflow:definition.id,values:Object.fromEntries(definition.fields.filter((f:any)=>f.type!=='audio').map((f:any)=>[f.key,f.default??''])),audio_asset_id:null})}}]);setSelected(id);
   }
   function addImage(position?:{x:number;y:number}) {
     const d=config?.image_workflows?.[0];if(!d)return;const id=uid();dirty();
-    setNodes(old=>[...old,{id,type:'card',position:position||flow.screenToFlowPosition({x:window.innerWidth/2,y:200}),style:{width:360,height:260},data:{kind:'imagegen',label:'圖片生成',image_spec:imageDefaults(d,config?.video_defaults?.provider||'comfyui')}}]);setSelected(id);
+    setNodes(old=>[...old,{id,type:'card',position:position||flow.screenToFlowPosition({x:window.innerWidth/2,y:200}),style:{width:360,height:260},data:{kind:'imagegen',label:'圖片生成',image_spec:defaultTemplate(config,'image',imageDefaults(d,config?.video_defaults?.provider||'comfyui'))}}]);setSelected(id);
   }
   function resetImage(id:string,spec:any){dirty();setEdges(old=>old.filter(e=>e.target!==id));patch(id,{image_spec:spec});}
   function bindAudio(id:string,field:string,sourceId:string) {
@@ -767,7 +771,7 @@ function App() {
           project_id: project.id,
           node_id: id,
           request_id: uid(),
-          spec: {...payload(id), ...overrides, ...(promptOverride!==undefined?{prompt:promptOverride,prompt_source:null}:{})},
+          spec: {...payload(id), ...(nodes.find(n=>n.id===id)?.data.kind==='generation'?{motion_context:false,context_run_id:null,context_video_asset_id:null}:{}), ...overrides, ...(promptOverride!==undefined?{prompt:promptOverride,prompt_source:null}:{})},
         }),
       });
       setRuns((r) => [run, ...r]);
@@ -913,7 +917,7 @@ function App() {
     .filter((r) => r.node_id === selected)
     .sort((a, b) => b.created_at - a.created_at);
   return (
-    <actions.Provider
+    <TemplateContext.Provider value={{items:config?.node_templates||[],api,notify,refresh:async()=>setConfig(await api("/config"))}}><actions.Provider
       value={{ nodes, setSegments:(id,segments)=>patch(id,{segments}),addSegment,generateSegment:(id,previous)=>generate(id,undefined,{motion_context:true,context_run_id:previous||null,context_video_asset_id:null}),focusNode:id=>{setSelected(id);flow.fitView({nodes:[{id}],duration:250,maxZoom:1});}, editImage:(id,spec)=>patch(id,{image_spec:spec}), resetImage, editAudio:(id,spec)=>patch(id,{audio_spec:spec}), resetAudio, bindAudio, audioOutput:(id,asset)=>patch(id,{output_id:asset}), assets, runs, duplicate, preview: setModal, remove, generate, editText: (id, text) => patch(id, {text}), config, edges, editSpec: (id, value)=>{dirty();setNodes(old=>old.map(n=>n.id===id&&n.data.spec?{...n,data:{...n.data,spec:{...n.data.spec,...value}}}:n));}, pickReferences: id=>setLibraryPanel({scope:"project",target:id}), openAssistant: setAssistantNode, removeReference: edgeId=>{dirty();setEdges(old=>old.filter(e=>e.id!==edgeId));} }}
     >
       <main>
@@ -1151,6 +1155,7 @@ function App() {
               <button title="新增 Motion Context 導演台（實驗）" onClick={addDirector}>導演</button><button title="拼接分鏡圖" onClick={()=>setMediaTool({mode:'stitch'})}><LayoutGrid size={18}/></button>
               <button title="共用資產" onClick={()=>setLibraryPanel({scope:'shared'})}><ImageIcon size={18}/></button>
               <button title="專案生成內容" onClick={()=>setInspectorVisible(!inspectorVisible)}><PanelLeftOpen size={18}/></button>
+              <button title="節點模板" onClick={()=>setTemplatesOpen(true)}>模板</button>
               <button title="連線設定" onClick={showSettings}><Settings size={18}/></button>
               <span className="toolbar-save-state" title={saving} aria-label={saving}><i className={saving==='已儲存'?'saved':''}/></span>
               <span />
@@ -1319,6 +1324,7 @@ function App() {
             </div>
           </div>
         )}
+        {templatesOpen&&config&&<TemplateManager config={config} videoDefault={defaults(config)} onClose={()=>setTemplatesOpen(false)}/>}
         {settingsOpen && settings && (
           <div className="modal-overlay">
             <div className="dialog" role="dialog" aria-label="連線設定">
@@ -1475,7 +1481,7 @@ function App() {
           </div>
         )}
       </main>
-    </actions.Provider>
+    </actions.Provider></TemplateContext.Provider>
   );
 }
 createRoot(document.getElementById("root")!).render(

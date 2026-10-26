@@ -27,3 +27,6 @@ dist/
 # Local-only tests and third-party prompt-writing skill
 tests/
 skills/h3-prompt-writing/
+
+# Local agent guidance
+AGENTS.md

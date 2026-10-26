@@ -1,3 +1,4 @@
+import {TemplateBar} from './NodeTemplates';
 import React,{useEffect} from 'react';
 import {Maximize2,Copy,Trash2,Image as ImageIcon} from 'lucide-react';
 import {Handle,Position,NodeResizer,useUpdateNodeInternals} from '@xyflow/react';
@@ -38,6 +39,7 @@ export function ImageNode({id,data,selected,ctx,Media,Usage}:any){
     <header><span className="node-icon"><ImageIcon size={15}/></span><span>{data.label}</span><small>IMAGE</small></header>
     <div className="card-media" onDoubleClick={()=>output&&ctx.preview(output)}>{output?<><Media asset={output}/><button className="expand nodrag" title="放大查看" onClick={()=>ctx.preview(output)}><Maximize2 size={17}/></button></>:<div className="generation-placeholder"><strong>{definition?.name}</strong><span>{active?'圖片生成中…':'選取節點，設定輸入後生成'}</span></div>}</div>
     {selected&&<div className="node-composer audio-composer nodrag nowheel" onDoubleClick={e=>e.stopPropagation()}>
+      <TemplateBar category={'image'} spec={spec} onApply={(next:any)=>next.workflow!==spec.workflow?ctx.resetImage(id,next):ctx.editImage(id,next)}/>
       <div className="composer-fields"><label>功能<select aria-label="圖片生成功能" value={spec.workflow} onChange={e=>ctx.resetImage(id,imageDefaults(catalog.find((d:any)=>d.id===e.target.value),spec.provider))}>{catalog.map((d:any)=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label><label>運算服務<select value={spec.provider} onChange={e=>update({provider:e.target.value})}><option value="runninghub">RunningHub</option><option value="comfyui">本機 ComfyUI</option></select></label></div>
       {definition?.fields.filter((f:any)=>!f.advanced).map(field)}
       {definition?.supports_lora&&<details onToggle={()=>updateInternals(id)}><summary>高級功能 · LoRA 與採樣</summary>

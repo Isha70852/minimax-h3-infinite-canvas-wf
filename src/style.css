@@ -1750,3 +1750,12 @@ main {
 .studio-popover a { color:#ddd; }
 
 .studio-overlay{z-index:10000;display:flex;align-items:center;justify-content:center}.studio-dialog{position:relative;width:min(400px,90vw);padding:44px 28px 32px;border-radius:22px;background:#232323;border:1px solid #494949;box-shadow:0 24px 80px #0009;text-align:center}.studio-dialog>svg{color:#d2d8d3}.studio-dialog h2{margin:20px 0;font-size:23px}.studio-dialog>a{display:inline-flex;align-items:center;gap:10px;color:#eee;padding:10px 20px;border:1px solid #505050;border-radius:12px}.studio-close{position:absolute;right:12px;top:12px}
+
+/* Parameter presets */
+.node-template-bar { margin-bottom:12px; padding:10px; border:1px solid #454545; border-radius:10px; }
+.node-template-bar summary { display:flex; align-items:center; gap:8px; cursor:pointer; }
+.node-template-bar select { width:100%; margin:8px 0; }
+.template-manager { width:min(950px,94vw); max-height:90vh; overflow-y:auto; }
+.template-manager .template-actions { flex-wrap:wrap; padding:10px 0; }
+.template-editor { border-top:1px solid #444; margin-top:14px; padding-top:14px; }
+.template-editor > label { display:block; margin:10px 0; }

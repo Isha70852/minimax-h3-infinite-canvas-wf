@@ -19,6 +19,12 @@ class Reference(BaseModel):
     role: Literal['reference', 'first', 'last'] = 'reference'
 
 
+class VideoLoRA(BaseModel):
+    name: str = Field(max_length=500)
+    strength: float = Field(default=1, ge=-20, le=20, allow_inf_nan=False)
+    enabled: bool = True
+
+
 class Generation(BaseModel):
     motion_context: bool = False
     context_run_id: str | None = None
@@ -30,6 +36,8 @@ class Generation(BaseModel):
     model: str = Field(default=MODELS[0], min_length=1, max_length=500)
     lora: str = Field(default=LORAS[0], min_length=1, max_length=500)
     lora_enabled: bool = True
+    lora_strength: float = Field(default=1, ge=-20, le=20, allow_inf_nan=False)
+    extra_loras: list[VideoLoRA] = Field(default_factory=list, max_length=30)
     shift_enabled: bool | None = None
     shift_video: float = Field(default=6, ge=0, le=100)
     shift_audio: float = Field(default=3, ge=0, le=100)
@@ -110,12 +118,20 @@ def compile_workflow(spec: Generation, assets: dict, filenames: dict | None = No
         if N[role] not in graph or field not in graph[N[role]]['inputs']: raise ValueError(f'影片映射已失效：{key}')
         graph[N[role]]['inputs'][field] = values[key]
     graph[N['lora']]['inputs']['model'] = [N['model'],0]
+    graph[N['lora']]['inputs']['strength_model'] = spec.lora_strength
     graph[N['resolution']]['inputs']['multiple'] = 32
     graph[N['output']]['inputs']['filename_prefix'] = f'H3Canvas/{seed}'
     def node(id, cls, **inputs):
         graph[id] = {'class_type': cls, 'inputs': inputs}
         return [id, 0]
     model = [N['lora'], 0] if spec.lora_enabled else [N['model'], 0]
+    if spec.lora_enabled:
+        for i, lora in enumerate(spec.extra_loras):
+            if not lora.enabled or not lora.name.strip(): continue
+            id = str(9000+i)
+            graph[id] = copy.deepcopy(graph[N['lora']])
+            graph[id]['inputs'].update(model=model, lora_name=lora.name.strip(), strength_model=lora.strength)
+            model = [id,0]
     shift = spec.shift_enabled if spec.shift_enabled is not None else spec.lora == LORAS[1]
     if spec.lora_enabled and shift:
         model = node(N['shift'], 'MiniMaxH3SigmaShift', model=model, shift_video=spec.shift_video, shift_audio=spec.shift_audio)

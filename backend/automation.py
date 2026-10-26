@@ -4,7 +4,16 @@ import secrets
 from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.openapi.utils import get_openapi
 from pydantic import BaseModel
-from . import storage as db, prompting
+from . import storage as db, prompting, node_templates, directors
+
+class AutomationRun(BaseModel):
+    project_id: str
+    node_id: str
+    request_id: str
+    spec: dict
+    template_id: str | None = None
+    template_tag: str | None = None
+    use_default_template: bool = True
 
 management = APIRouter(prefix='/api/automation', tags=['Automation settings'])
 
@@ -50,12 +59,16 @@ def install(app, services):
              ('/workflow/preview','POST','preview'),('/runs','GET','runs')]
     for path,method,name in aliases:
         router.add_api_route(path,services[name],methods=[method],name='automation_'+name)
+    router.add_api_route('/node-templates',node_templates.templates,methods=['GET'])
+    router.add_api_route('/node-templates',node_templates.create_template,methods=['POST'])
+    router.add_api_route('/node-templates/{id}',node_templates.save_template,methods=['PUT'])
+    router.add_api_route('/node-templates/{id}',node_templates.delete_template,methods=['DELETE'])
 
     @router.get('/catalog')
     def catalog():
         return {'version':1,'config':services['config'](),'capabilities':services['capabilities'](),
                 'schemas':{c.__name__:c.model_json_schema() for c in (services['Generation'],services['ImageGeneration'],services['AudioGeneration'],prompting.DraftRequest)},
-                'prompt_templates':prompting.public_settings().get('templates',[])}
+                'node_templates':node_templates.templates(), 'prompt_templates':prompting.public_settings().get('templates',[])}
 
     @router.get('/schema')
     def schema():
@@ -68,14 +81,21 @@ def install(app, services):
         return services['save_project'](id,body)
     router.add_api_route('/projects/{id}',update_project,methods=['PUT'])
 
-    async def submit(body: services['RunRequest']):
+    async def submit(body: AutomationRun):
         project=services['get_project'](body.project_id)
         node=next((n for n in project.get('nodes',[]) if n['id']==body.node_id),None)
+        category={'generation':'video','imagegen':'image','music':'music','tts':'tts'}.get((node or {}).get('data',{}).get('kind'))
+        if not category: raise HTTPException(422,'請先建立對應類型的生成節點。')
+        spec=node_templates.resolve(category,body.spec,body.template_id,body.template_tag,body.use_default_template)
+        body=services['RunRequest'].model_validate({**body.model_dump(),'spec':spec})
         expected=('imagegen',) if isinstance(body.spec,services['ImageGeneration']) else ('music','tts') if isinstance(body.spec,services['AudioGeneration']) else ('generation',)
         if not node or node.get('data',{}).get('kind') not in expected: raise HTTPException(422,'請先建立對應類型的生成節點。')
         old=db.get('runs',body.request_id)
         if old and (old['project_id']!=body.project_id or old['node_id']!=body.node_id): raise HTTPException(409,'request_id 已被其他任務使用。')
-        return await services['start_run'](body)
+        result = await services['start_run'](body)
+        if result['spec'].get('motion_context'):
+            directors.attach(body.project_id,body.node_id,result['spec'])
+        return result
     router.add_api_route('/runs',submit,methods=['POST'])
 
     @router.get('/runs/{id}')

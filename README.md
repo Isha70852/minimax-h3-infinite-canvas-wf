@@ -65,6 +65,12 @@ The API supports discovery, project read/write, image/video/audio uploads, optio
 The Colab notebook can be opened in Google Colab and used with its corresponding remote skill. Configure its runtime and credentials there; it does not automatically connect to the canvas.
 
 
+## Node templates and director
+
+Configure a video, image, music or TTS node, then expand **Node templates** to save its parameters with a name and tags. Set one default per category and manage presets from the left canvas menu. New nodes use the default; existing nodes can select a preset manually. Templates exclude scene text and media and stay in local data.
+
+**For continuation, click Generate this segment in the director. Generate video on an individual node does not automatically continue the previous segment.** API motion-context submissions create/update a director automatically; reload the project to see it.
+
 ## License and acknowledgements
 
 Project code uses the repository's [MIT License](LICENSE). This does **not** relicense model weights, custom nodes, dependencies or outputs. Summaries below reflect upstream pages checked on 2026-10-25; exact checkpoint licenses and provider terms prevail. No weights are distributed. See [third-party notices](THIRD_PARTY_NOTICES.md) and `licenses/` for dependency notices.
@@ -86,3 +92,9 @@ Thank you to the model teams, ComfyUI/custom-node maintainers, RunningHub, and t
 | React, Vite, XYFlow, FastAPI, Uvicorn, Lucide | MIT / ISC / BSD-style licenses by package; retain supplied notices. / 各套件依自身授權。 | [React](https://github.com/facebook/react), [Vite](https://github.com/vitejs/vite), [XYFlow](https://github.com/xyflow/xyflow), [FastAPI](https://github.com/fastapi/fastapi), [Uvicorn](https://github.com/encode/uvicorn), [Lucide](https://github.com/lucide-icons/lucide) |
 | Mediabunny | MPL-2.0; unmodified dependency, preserve notices and applicable source obligations. / 未修改的 MPL-2.0 依賴，保留聲明與適用原始碼義務。 | [Source](https://github.com/Vanilagy/mediabunny/tree/v1.62.1) |
 | ComfyUI and custom-node authors | Separate upstream licenses; not bundled as an installed engine. / 外部引擎與節點各自授權，未隨本專案安裝包散布。 | [ComfyUI](https://github.com/Comfy-Org/ComfyUI), [RunningHub](https://www.runninghub.ai/) |
+
+Special thanks:
+
+- [KJ / ComfyUI-KJNodes](https://github.com/kijai/ComfyUI-KJNodes)
+- [T8 / comfyui-minimax-h3-audio-T8](https://github.com/T8mars/comfyui-minimax-h3-audio-T8)
+- [Motion Context / ComfyUI-H3-Motion-Context](https://github.com/NikoDemon80/ComfyUI-H3-Motion-Context)

@@ -21,6 +21,7 @@ from PIL import Image
 from pydantic import BaseModel, Field
 
 from . import storage as db
+from . import node_templates, connection_errors, directors
 from . import library
 from . import recycle
 from . import latent_transport
@@ -170,7 +171,10 @@ def launch(id):
 
 @asynccontextmanager
 async def lifespan(app):
+    loop = asyncio.get_running_loop()
+    previous_handler = connection_errors.install(loop)
     library.migrate()
+    directors.migrate()
     for job in db.all_records('prompt_jobs'):
         if job['status'] == 'running':
             db.put('prompt_jobs', job['id'], {**job, 'status': 'failed', 'error': '服務重啟；未自動重送提示詞請求，請確認後再試。'})
@@ -185,10 +189,12 @@ async def lifespan(app):
     for task in tasks:
         task.cancel()
     await asyncio.gather(*tasks, return_exceptions=True)
+    loop.set_exception_handler(previous_handler)
 
 
 app = FastAPI(title='H3 Canvas', lifespan=lifespan)
 app.include_router(prompting.router)
+app.include_router(node_templates.router)
 from . import chatgpt_auth
 app.include_router(chatgpt_auth.router)
 
@@ -212,7 +218,7 @@ async def invalid(request, error):
 def config():
     values = db.settings()
     profiles = values.get('models') or [{'name': name, 'shift_enabled': False, 'shift_video': 6, 'shift_audio': 3} for name in MODELS]
-    return {'models': [m['name'] for m in profiles], 'model_profiles': profiles, 'image_workflows': image_workflows.catalog(), 'audio_workflows': catalog(), 'video_defaults': values.get('video_defaults', {}), 'loras': values.get('loras') or LORAS, 'aspects': ASPECTS}
+    return {'node_templates': node_templates.templates(), 'models': [m['name'] for m in profiles], 'model_profiles': profiles, 'image_workflows': image_workflows.catalog(), 'audio_workflows': catalog(), 'video_defaults': values.get('video_defaults', {}), 'loras': values.get('loras') or LORAS, 'aspects': ASPECTS}
 
 
 @app.get('/api/capabilities')

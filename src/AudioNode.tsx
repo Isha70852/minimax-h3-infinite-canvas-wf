@@ -1,3 +1,4 @@
+import {TemplateBar} from './NodeTemplates';
 import {AudioPlayer} from './AudioPlayer';
 import {Copy,Trash2,Music2} from 'lucide-react';
 import React,{useEffect} from 'react';
@@ -18,6 +19,7 @@ export function AudioNode({id,data,selected,ctx,Media,Usage}:any) {
     <header><Music2 size={15}/><span>{data.label}</span><small>{data.kind==='music'?'MUSIC':'TTS'}</small></header>
     <div className="card-media">{output?<Media asset={output} controls/>:<div className="generation-placeholder"><span>{active?'聲音生成中…':definition?.name+' · 選取後設定'}</span></div>}</div>
     {selected&&<div className="node-composer audio-composer nodrag nowheel" onDoubleClick={e=>e.stopPropagation()}>
+      <TemplateBar category={data.kind} spec={spec} onApply={(next:any)=>next.workflow!==spec.workflow?ctx.resetAudio(id,next):ctx.editAudio(id,next)}/>
       <div className="composer-fields"><label>功能<select aria-label="音訊生成功能" value={spec.workflow} onChange={e=>{const d=catalog.find((d:any)=>d.id===e.target.value);ctx.resetAudio(id,{kind:'audio',provider:spec.provider,workflow:d.id,values:Object.fromEntries(d.fields.filter((f:any)=>f.type!=='audio').map((f:any)=>[f.key,f.default??''])),audio_asset_id:null});}}>{catalog.filter((d:any)=>d.category===data.kind).map((d:any)=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label><label>運算服務<select value={spec.provider} onChange={e=>update({provider:e.target.value})}><option value="runninghub">RunningHub</option><option value="comfyui">本機 ComfyUI</option></select></label></div>
       {definition?.fields.map((field:any)=>{
         const edge=ctx.edges.find((e:any)=>e.target===id&&e.targetHandle===field.key);
