@@ -99,6 +99,12 @@ type Spec = {
   mode: "T2VA" | "FL2VA" | "Ref2VA";
   model: string;
   lora: string;
+  prompt_source?: string | null;
+  motion_context?: boolean;
+  context_run_id?: string | null;
+  context_video_asset_id?: string | null;
+  _template_id?: string;
+  _template_name?: string;
   lora_strength?: number;
   extra_loras?: {name:string;strength:number;enabled:boolean}[];
   megapixels: number;
@@ -161,6 +167,7 @@ const defaults = (config: Config): Spec => ({
   duration: 15,
   head_chunks: null,
   chunks: null,
+  lora_strength: 1, extra_loras: [],
   lora_enabled: true, shift_enabled: null, shift_video: 6, shift_audio: 3, low_vram_enabled: false, steps: 8, sampler: "euler", scheduler: "beta",
   ...config.video_defaults,
 });
@@ -193,6 +200,7 @@ const actions = createContext<{
   resetImage: (id:string,spec:any)=>void;
   bindAudio: (id:string,field:string,source:string)=>void;
   audioOutput: (id:string,asset:string)=>void;
+  restoreVideo: (id:string,spec:Spec)=>void;
   assets: Asset[];
   runs: Run[];
   duplicate: (id: string) => void;
@@ -208,7 +216,7 @@ const actions = createContext<{
   removeReference: (edgeId:string)=>void;
 }>({
   setSegments:()=>{},addSegment:()=>{},generateSegment:()=>{},focusNode:()=>{},
-  nodes: [], editImage:()=>{}, resetImage:()=>{}, editAudio:()=>{}, resetAudio:()=>{}, bindAudio:()=>{}, audioOutput:()=>{},
+  restoreVideo:()=>{}, nodes: [], editImage:()=>{}, resetImage:()=>{}, editAudio:()=>{}, resetAudio:()=>{}, bindAudio:()=>{}, audioOutput:()=>{},
   assets: [],
   runs: [],
   duplicate: () => {},
@@ -317,6 +325,16 @@ function CanvasCard({ id, data, selected }: NodeProps<CardNode>) {
         </div>
         <AdvancedSettings spec={data.spec} config={ctx.config} onChange={(value:Partial<Spec>)=>ctx.editSpec(id,value)}/>
         <div className="composer-submit"><button onClick={()=>ctx.openAssistant(id)}>✦ AI 撰寫提示詞</button><span>{data.spec.provider==='runninghub'?'依 RunningHub 實際用量計費':'本機運算'}</span><button className="primary" disabled={!!active} onClick={()=>ctx.generate(id)}><Play size={14}/>{active?'生成中…':asset?'重新生成':'生成影片'}</button></div>
+        <details className="video-node-history"><summary>生成歷史（{ctx.runs.filter(r=>r.node_id===id).length}）</summary>
+          {ctx.runs.filter(r=>r.node_id===id).sort((a,b)=>b.created_at-a.created_at).map(r=><div className="audio-history" key={r.id}>
+            <p>{new Date(r.created_at*1000).toLocaleString('zh-TW')} · {r.stage}</p>
+            {r.outputs.map(a=><div key={a.id}><Media asset={a} controls/><div className="template-actions"><button onClick={()=>ctx.preview(a)}>放大查看</button><button onClick={()=>ctx.audioOutput(id,a.id)}>顯示此版本</button><a href={a.url} download={a.name}>下載</a></div></div>)}
+            <Usage run={r}/>{r.error&&<p className="error-message">{r.error}</p>}
+            <details><summary>提示詞與參數</summary><textarea readOnly rows={5} value={r.compiled?.prompt||r.spec.prompt}/><p>{r.spec.duration} 秒 · {r.spec.megapixels} MP · {r.spec.steps??8} steps · {r.spec.sampler??'euler'} / {r.spec.scheduler??'beta'}</p><p>{r.spec.model}</p></details>
+            <button onClick={()=>ctx.restoreVideo(id,r.spec)}>套用此版提示詞與參數</button>
+          </div>)}
+          {!ctx.runs.some(r=>r.node_id===id)&&<p className="help">尚無生成紀錄。</p>}
+        </details>
       </div>}
       {selected && run && (
         <div className={"run-status " + run.status}>
@@ -652,6 +670,12 @@ function App() {
     dirty();setNodes(old=>[...old.map(n=>n.id===owner?{...n,data:{...n.data,segments:[...ids,id]}}:n),{id,type:'card',position:{x:parent.position.x+600,y:parent.position.y+ids.length*300},data:{kind:'generation',label:'導演台第 '+(ids.length+1)+' 段',spec}}]);
     if(previous)setEdges(old=>[...old,...old.filter(e=>e.target===previous.id&&e.targetHandle!=='prompt').map(e=>({...structuredClone(e),id:uid(),target:id}))]);
   }
+  function presetBase(category:string,spec:any){
+    if(category==='video'){const {prompt,...parameters}=defaults(config!);return parameters;}
+    const catalog=category==='image'?config?.image_workflows:config?.audio_workflows;
+    const definition=catalog?.find(d=>d.id===spec.workflow);
+    return {kind:category==='image'?'image':'audio',provider:spec.provider,workflow:spec.workflow,values:Object.fromEntries((definition?.fields||[]).filter((f:any)=>!['text','audio','image'].includes(f.type)).map((f:any)=>[f.key,f.default])),...(category==='image'?{loras:[]}:{})};
+  }
   function addAudio(category: 'music'|'tts', position?:{x:number;y:number}) {
     const definition=config?.audio_workflows?.find(d=>d.category===category);
     if(!definition)return;
@@ -917,8 +941,8 @@ function App() {
     .filter((r) => r.node_id === selected)
     .sort((a, b) => b.created_at - a.created_at);
   return (
-    <TemplateContext.Provider value={{items:config?.node_templates||[],api,notify,refresh:async()=>setConfig(await api("/config"))}}><actions.Provider
-      value={{ nodes, setSegments:(id,segments)=>patch(id,{segments}),addSegment,generateSegment:(id,previous)=>generate(id,undefined,{motion_context:true,context_run_id:previous||null,context_video_asset_id:null}),focusNode:id=>{setSelected(id);flow.fitView({nodes:[{id}],duration:250,maxZoom:1});}, editImage:(id,spec)=>patch(id,{image_spec:spec}), resetImage, editAudio:(id,spec)=>patch(id,{audio_spec:spec}), resetAudio, bindAudio, audioOutput:(id,asset)=>patch(id,{output_id:asset}), assets, runs, duplicate, preview: setModal, remove, generate, editText: (id, text) => patch(id, {text}), config, edges, editSpec: (id, value)=>{dirty();setNodes(old=>old.map(n=>n.id===id&&n.data.spec?{...n,data:{...n.data,spec:{...n.data.spec,...value}}}:n));}, pickReferences: id=>setLibraryPanel({scope:"project",target:id}), openAssistant: setAssistantNode, removeReference: edgeId=>{dirty();setEdges(old=>old.filter(e=>e.id!==edgeId));} }}
+    <TemplateContext.Provider value={{items:config?.node_templates||[],api,notify,baseDefaults:presetBase,refresh:async()=>setConfig(await api("/config"))}}><actions.Provider
+      value={{ restoreVideo:(id,spec)=>{dirty();setEdges(old=>old.filter(e=>!(e.target===id&&e.targetHandle==='prompt')));patch(id,{spec:{...spec,_template_id:'',_template_name:'',prompt_source:null,motion_context:false,context_run_id:null,context_video_asset_id:null}});}, nodes, setSegments:(id,segments)=>patch(id,{segments}),addSegment,generateSegment:(id,previous)=>generate(id,undefined,{motion_context:true,context_run_id:previous||null,context_video_asset_id:null}),focusNode:id=>{setSelected(id);flow.fitView({nodes:[{id}],duration:250,maxZoom:1});}, editImage:(id,spec)=>patch(id,{image_spec:spec}), resetImage, editAudio:(id,spec)=>patch(id,{audio_spec:spec}), resetAudio, bindAudio, audioOutput:(id,asset)=>patch(id,{output_id:asset}), assets, runs, duplicate, preview: setModal, remove, generate, editText: (id, text) => patch(id, {text}), config, edges, editSpec: (id, value)=>{dirty();setNodes(old=>old.map(n=>n.id===id&&n.data.spec?{...n,data:{...n.data,spec:{...n.data.spec,...value}}}:n));}, pickReferences: id=>setLibraryPanel({scope:"project",target:id}), openAssistant: setAssistantNode, removeReference: edgeId=>{dirty();setEdges(old=>old.filter(e=>e.id!==edgeId));} }}
     >
       <main>
         <header className="topbar">

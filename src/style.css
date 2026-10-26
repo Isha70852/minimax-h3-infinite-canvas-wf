@@ -1759,3 +1759,7 @@ main {
 .template-manager .template-actions { flex-wrap:wrap; padding:10px 0; }
 .template-editor { border-top:1px solid #444; margin-top:14px; padding-top:14px; }
 .template-editor > label { display:block; margin:10px 0; }
+
+.video-node-history { margin-top:12px; max-height:520px; overflow:auto; }
+.video-node-history video { width:100%; max-height:280px; border-radius:8px; }
+.video-node-history textarea { width:100%; resize:vertical; }
