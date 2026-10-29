@@ -1,7 +1,7 @@
 {
-  "version": 2,
-  "template": "../workflow_template.json",
-  "motion_template": "video_motion_mp4.json",
+  "version": 3,
+  "template": "video_unified.json",
+  "motion_template": "video_unified.json",
   "nodes": {
     "condition": "166",
     "model": "303",
@@ -12,7 +12,7 @@
     "noise": "129",
     "sampler": "123",
     "scheduler": "124",
-    "output": "174",
+    "output": "356",
     "shift": "158",
     "kitchen": "148",
     "sol": "297",
@@ -20,12 +20,20 @@
     "chunks": "230",
     "guider": "126",
     "sample": "125",
-    "motion": "314",
-    "trim": "318",
-    "context_video": "311",
+    "motion": "348",
+    "trim": "349",
+    "context_video": "354",
     "context_components": "312",
     "video_decode": "122",
-    "audio_decode": "121"
+    "audio_decode": "121",
+    "condition2": "340",
+    "output2": "357",
+    "trim2": "350",
+    "decode2": "345",
+    "plan": "338",
+    "upscale": "339",
+    "reconcile": "341",
+    "mixer": "342"
   },
   "fields": {
     "model": [
@@ -69,5 +77,50 @@
       "scheduler"
     ]
   },
-  "reference_node_start": 1000
+  "reference_node_start": 1000,
+  "two_pass_parameters": {
+    "plan": {
+      "base_steps": 8,
+      "coarse_steps": 4,
+      "refine_steps": 4
+    },
+    "upscale": {
+      "model_name": "minimax_h3_latent_upscaler_3d_fp16.safetensors",
+      "size_mode": "scale_by",
+      "scale_by": 2,
+      "target_megapixels": 1,
+      "target_width": 1280,
+      "target_height": 704,
+      "aspect_policy": "preserve_source",
+      "max_anisotropy": 1.05,
+      "precision": "fp16",
+      "release_policy": "offload_after"
+    },
+    "reconcile": {
+      "audio_policy": "auto",
+      "second_pass_audio_source": "legacy_policy",
+      "second_pass_audio_strength": 0
+    },
+    "mixer": {
+      "shift_video": 12,
+      "shift_audio": 3,
+      "enable_tail": false,
+      "extra_tail_steps": 1,
+      "tail_spacing": "video_sigma_linear",
+      "enable_model_time_bias": true,
+      "bias": -0.025,
+      "bias_start_progress": 0.7,
+      "bias_end_progress": 0.95,
+      "bias_domain": "video_sigma",
+      "enable_stg": false,
+      "stg_scale": 0.35,
+      "stg_double_blocks": "25",
+      "stg_start_progress": 0.25,
+      "stg_end_progress": 0.85,
+      "enable_restart": false,
+      "restart_video_sigma": 0.15,
+      "restart_steps": 3,
+      "restart_seed": "708124950291568"
+    }
+  }
 }

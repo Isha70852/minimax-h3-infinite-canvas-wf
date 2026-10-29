@@ -73,7 +73,7 @@ Colab 文件可在 Google Colab 開啟，依筆記本設定執行環境與認證
 
 ## Noise seed 與 AI 提示詞檔案
 
-影片節點的高級功能可填寫 **Noise seed**；留空則每次隨機。生成結果、歷史與導演台顯示此次實際 seed，可按「沿用此 Noise seed」或套用歷史版本。API 使用 `spec.noise_seed` 十進位字串（0–18446744073709551615），回傳 `seed` 亦為字串，避免 JavaScript 大整數精度損失。相同 seed 不保證不同模型、參數或環境的結果一致。RH 幣只適用 RunningHub；本機 ComfyUI 不需回傳用量欄位，本機顯示的是包含排隊及儲存的任務總耗時。
+影片節點的高級功能可填寫 **Noise seed**；選擇 `randomize` 每次隨機，或選 `fixed` 並填入 seed 以重用。生成結果、歷史與導演台顯示此次實際 seed，可按「沿用此 Noise seed」或套用歷史版本。API 使用 `spec.noise_seed` 十進位字串（0–18446744073709551615），回傳 `seed` 亦為字串，避免 JavaScript 大整數精度損失。相同 seed 不保證不同模型、參數或環境的結果一致。RH 幣只適用 RunningHub；本機 ComfyUI 不需回傳用量欄位，本機顯示的是包含排隊及儲存的任務總耗時。
 
 `prompts/` 是 AI 撰寫提示詞模板的來源：放入 UTF-8 `.md` 或 `.txt`，每個檔案為一個模板，檔名（不含副檔名）為顯示名稱，全文作為模板內容。已附上 H3、圖片、音樂及 TTS 範例；依用途自行選擇。這些是給 AI 的撰寫規則，不是生成工作流。此資料夾與「節點參數模板」（仍存本機 data）不同。
 
@@ -81,7 +81,7 @@ Colab 文件可在 Google Colab 開啟，依筆記本設定執行環境與認證
 
 ## 進階：修改未開放的模型與參數
 
-1. 先備份要編輯的 JSON。一般影片使用 `workflow_template.json`；MP4 motion context 使用 `workflows/video_motion_mp4.json`。若要兩種影片模式都生效，須分別修改。
+1. 先備份要編輯的 JSON。所有影片模式共用 `workflows/video_unified.json`，由 `workflows/video_registry.json` 指定。舊 `workflow_template.json` 與 `video_motion_mp4.json` 保留為歷史檔案，不再作為目前影片執行圖。
 2. 圖片／音訊請先查看 `workflows/image_registry.json`、`workflows/audio_registry.json`，找到功能的 `template`；未指定 template 的音訊使用對應 `<功能 ID>.json`。修改執行 JSON 中載入節點的實際 text encoder／VAE 檔名或其他固定輸入；服務端必須已安裝相容模型與節點。`example_workflows/` 只是分享範例，修改它不會影響畫布執行。
 3. 保留節點 ID、class_type、連線及輸入型別。介面／API 已開放的參數會在編譯時覆寫 JSON 預設值，應從介面或節點模板設定；FLUX encoder 的自動配對由 image registry 的 `model_clip` 控制，也需同步調整。
 4. 若換工作流導致節點 ID 或輸入名稱改變，更新對應 registry 映射（影片另有 `video_registry.json`）；新增可調欄位可能需要同步修改 schema、編譯器和介面。只換現有固定載入節點的檔名通常不需改程式。
@@ -114,3 +114,17 @@ Colab 文件可在 Google Colab 開啟，依筆記本設定執行環境與認證
 - [KJ / ComfyUI-KJNodes](https://github.com/kijai/ComfyUI-KJNodes)
 - [T8 / comfyui-minimax-h3-audio-T8](https://github.com/T8mars/comfyui-minimax-h3-audio-T8)
 - [Motion Context / ComfyUI-H3-Motion-Context](https://github.com/NikoDemon80/ComfyUI-H3-Motion-Context)
+
+## 新版一採／二採統一工作流
+
+請將 `example_workflows/MiniMax_H3_一採保留_二採Latent放大_無限畫布.json` 匯入 RunningHub，將其 ID 填入設定中的「影片統一工作流 ID」。一般影片、motion context、二採、motion context＋二採都使用這一個 ID，舊的獨立 motion ID 不再使用。本機 ComfyUI 需安裝對應 T8 節點及模型，但不需工作流 ID。
+
+- 影片高級功能勾選「二採放大」，`scale_by` 預設 2，其餘含一採排程沿用提供的工作流。可展開二採完整參數自行覆寫。兩個輸出皆為 **24 fps**。
+- 勾選「同時保存一採影片」會保留兩種影片，取消只保存二採，一採仍會在內部執行。結果名稱標示一採／二採，素材另有 `generation_pass: first/second` 及 `output_node_id` 供 API 判斷。
+- 導演台按「生成此段」才會延續前段。預設優先使用前段最近成功任務的一採，沒有則用二採；可從來源選單指定影片。沒有前段時會跳過兩個 trim。
+- `audio_mode` 預設 `native`；`lock_source`、`remix_source` 需另外選擇 drive audio 聲音素材，或連接聲音節點至專用輸入，不會自動占用參考聲音編號。一、二採共用相同素材。圖片用途需指定：首幀 I2VA 接 first、尾幀 L2VA 接 last、首尾 FL2VA 接 first＋last、參考 Ref2VA 接 reference；不符合模式會在送出前提示。
+- 每個影片節點可覆寫 RunningHub 的 Standard／Plus／Ultra 機型，或沿用全域設定；不影響本機 ComfyUI。二採高解析度需要較大顯存。
+- 節點名稱可直接編輯；提示詞的 `@` 選單從已連接的素材中挑選，在游標位置插入。影片放大會沿用預覽的靜音狀態。
+- 發布僅包含 `scripts/public_prompts.json` 列出的 11 個已同意公開模板。新增模板預設不加入 Git／release，需另外指定並更新清單。
+
+AI 操縱端請重新讀取 `/catalog`，依 Generation schema 設定 `seed_mode`、`audio_mode`、`drive_audio_asset_id`、`two_pass`、`save_first_pass`、`two_pass_parameters`、`instance_type`。二採預設值由 `/catalog.config.video_two_pass_parameters` 提供，接法請參考隨附 skill。

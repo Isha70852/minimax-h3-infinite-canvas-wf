@@ -26,6 +26,13 @@ class VideoLoRA(BaseModel):
 
 
 class Generation(BaseModel):
+    seed_mode: Literal['fixed', 'randomize'] | None = None
+    audio_mode: Literal['native','reference_only','lock_source','remix_source'] = 'native'
+    drive_audio_asset_id: str | None = None
+    instance_type: Literal['default','plus','ultra'] | None = None
+    two_pass: bool = False
+    save_first_pass: bool = True
+    two_pass_parameters: dict = Field(default_factory=dict)
     noise_seed: str | None = Field(default=None, description='Decimal uint64 string; null/empty selects a fresh random seed. Use a string to avoid JavaScript precision loss.')
 
     @field_validator('noise_seed', mode='before')
@@ -42,7 +49,7 @@ class Generation(BaseModel):
     prompt_source: str | None = None
     provider: Literal['comfyui', 'runninghub'] = 'comfyui'
     prompt: str = Field(min_length=1, max_length=100000)
-    mode: Literal['T2VA', 'FL2VA', 'Ref2VA'] = 'T2VA'
+    mode: Literal['T2VA', 'I2VA', 'L2VA', 'FL2VA', 'Ref2VA'] = 'T2VA'
     model: str = Field(default=MODELS[0], min_length=1, max_length=500)
     lora: str = Field(default=LORAS[0], min_length=1, max_length=500)
     lora_enabled: bool = True
@@ -74,11 +81,12 @@ def ordered_references(spec, assets):
         refs.append({**asset, 'role': ref.role})
     if spec.mode == 'T2VA' and refs:
         raise ValueError('文生影片不使用素材，請移除引用或改用參考生影片。')
-    if spec.mode == 'FL2VA':
-        if len(refs) != 2 or sorted(r['role'] for r in refs) != ['first', 'last']:
-            raise ValueError('首尾生影片需要兩張圖片，分別指定為首幀與尾幀。')
+    expected = {'I2VA':['first'], 'L2VA':['last'], 'FL2VA':['first','last']}
+    if spec.mode in expected:
+        if sorted(r['role'] for r in refs) != expected[spec.mode]:
+            raise ValueError('請依模式指定首幀／尾幀圖片，且不要混入參考素材。')
     elif any(r['role'] != 'reference' for r in refs):
-        raise ValueError('只有首尾生影片可指定首幀與尾幀。')
+        raise ValueError('首／尾幀請使用對應的生成模式。')
     if spec.mode == 'Ref2VA' and not refs:
         raise ValueError('參考生影片至少需要一項素材。')
     order = {'first': 0, 'last': 1, 'reference': 2}
@@ -124,6 +132,7 @@ def compile_workflow(spec: Generation, assets: dict, filenames: dict | None = No
         if key.startswith('ref_') and '.' in key or key in ('first_frame', 'last_frame', 'drive_audio', 'final_audio'):
             del cond[key]
     cond['task_type'] = spec.mode
+    cond['audio_mode'] = spec.audio_mode
     values = {'model':spec.model,'lora':spec.lora,'prompt':prompt,'megapixels':0.98 if spec.megapixels==1 else spec.megapixels,'aspect_ratio':spec.aspect_ratio,'duration':spec.duration,'seed':seed,'sampler':spec.sampler.strip(),'steps':spec.steps,'scheduler':spec.scheduler.strip()}
     for key,(role,field) in config['fields'].items():
         if N[role] not in graph or field not in graph[N[role]]['inputs']: raise ValueError(f'影片映射已失效：{key}')
@@ -186,19 +195,51 @@ def compile_workflow(spec: Generation, assets: dict, filenames: dict | None = No
                 if val[0] not in graph:
                     raise ValueError(f'工作流缺少節點 {val[0]}')
                 visit(val[0])
-    outputs = [N['output']]
-    if spec.motion_context:
-        if spec.context_video_asset_id:
-            asset = assets[spec.context_video_asset_id]
-            if asset['kind'] != 'video':
-                raise ValueError('Motion context 必須使用影片素材。')
-            graph[N['context_video']]['inputs']['file'] = (filenames or {}).get(asset['id'], asset['filename'])
-        else:
-            # First segment has no context; bypass both context and overlap trimming.
-            graph[N['guider']]['inputs']['conditioning'] = [N['condition'], 0]
-            graph[N['output']]['inputs']['images'] = [N['video_decode'], 0]
-            graph[N['output']]['inputs']['audio'] = [N['audio_decode'], 0]
+    if spec.audio_mode in ('lock_source','remix_source') and not spec.drive_audio_asset_id:
+        raise ValueError('此 audio_mode 需要連接或選擇 drive audio。')
+    if spec.drive_audio_asset_id:
+        audio=assets[spec.drive_audio_asset_id]
+        if audio['kind']!='audio': raise ValueError('Drive audio 必須是聲音素材。')
+        cond['drive_audio']=node('9100','LoadAudio',audio=(filenames or {}).get(audio['id'],audio['filename']))
+    has_context=spec.motion_context and bool(spec.context_video_asset_id)
+    if has_context:
+        asset=assets[spec.context_video_asset_id]
+        if asset['kind']!='video': raise ValueError('Motion context 必須使用影片。')
+        graph[N['context_video']]['inputs']['file']=(filenames or {}).get(asset['id'],asset['filename'])
+    else:
+        graph[N['guider']]['inputs']['conditioning']=[N['condition'],0]
+    # Both output branches independently bypass overlap trimming without context.
+    if not has_context:
+        graph[N['output']]['inputs'].update(images=[N['video_decode'],0],audio=[N['audio_decode'],0])
+        graph[N['output2']]['inputs'].update(images=[N['decode2'],0],audio=[N['decode2'],1])
+    outputs=[N['output']]
+    if spec.two_pass:
+        for role, parameters in spec.two_pass_parameters.items():
+            defaults=config['two_pass_parameters'].get(role)
+            if defaults is None or not isinstance(parameters,dict): raise ValueError('未知二採參數群組')
+            for key,value in parameters.items():
+                if key not in defaults: raise ValueError('未知二採參數：'+key)
+                default=defaults[key]
+                if key=='restart_seed': value=int(Generation.valid_seed(value))
+                elif isinstance(default,bool):
+                    if not isinstance(value,bool): raise ValueError(key+' 需要布林值')
+                elif isinstance(default,(int,float)):
+                    import math
+                    if isinstance(value,bool) or not isinstance(value,(int,float)) or not math.isfinite(value): raise ValueError(key+' 需要有限數字')
+                    if isinstance(default,int) and int(value)!=value: raise ValueError(key+' 需要整數')
+                elif not isinstance(value,str) or not value.strip(): raise ValueError(key+' 需要非空字串')
+                graph[N[role]]['inputs'][key]=value
+        if not 1<=graph[N['upscale']]['inputs']['scale_by']<=4: raise ValueError('scale_by 必須介於 1–4')
+        graph[N['plan']]['inputs']['model']=model
+        graph[N['mixer']]['inputs']['model']=model
+        # Keep the supplied full first-pass schedule; parity plan supplies only refinement sigmas.
+        high=copy.deepcopy(cond)
+        high.update(width=[N['upscale'],1],height=[N['upscale'],2])
+        graph[N['condition2']]['inputs']=high
+        outputs=([N['output']] if spec.save_first_pass else [])+[N['output2']]
+    for role, label in (('output','first'),('output2','second')):
+        graph[N[role]]['inputs'].update(frame_rate=24,filename_prefix=f'H3Canvas/{seed}_{label}')
     for output in outputs: visit(output)
     return {'workflow': {k: v for k, v in graph.items() if k in active}, 'prompt': prompt,
             'mapping': [{k: r[k] for k in ('id', 'name', 'kind', 'role', 'alias', 'tag')} for r in refs],
-            'seed': str(seed), 'output_nodes': outputs, 'workflow_version': config['version']}
+            'seed': str(seed), 'output_passes': {N['output']:'first',N['output2']:'second'}, 'output_nodes': outputs, 'workflow_version': config['version']}

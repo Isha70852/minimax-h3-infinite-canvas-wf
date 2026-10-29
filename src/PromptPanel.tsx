@@ -1,3 +1,4 @@
+import {PromptInput} from './GenerationControls';
 import React, { useEffect, useState } from 'react';
 
 export function PromptPanel({projectId,nodeId,api,getSpec,saveProject,onClose,onApply,requirement,onRequirement,refs,notify,textMode=false,onReuseReferences,onPickReferences,onRemoveReference}:any) {
@@ -35,7 +36,7 @@ export function PromptPanel({projectId,nodeId,api,getSpec,saveProject,onClose,on
         <label><input type="checkbox" checked={includeTemplates} onChange={e=>setIncludeTemplates(e.target.checked)}/>附上歷史段落的模板（本次使用的模板仍由上方選擇）</label><p className="help">手動來源包含目前文字／影片節點及影片提交紀錄，會標記為使用者撰寫的前段內容。請在下方使用者要求描述本次變化。</p><div className="history-options">{history.map(row=><div className="history-option" key={row.id}><label><input type="checkbox" checked={historyIds.includes(row.id)} onChange={e=>{setHistoryIds(ids=>e.target.checked?[...ids,row.id]:ids.filter(x=>x!==row.id));}}/><span>{row.source_type==='user_authored'?'手動／節點':'AI'} · {new Date(row.created_at*1000).toLocaleString()} · {row.requirement?.slice(0,65)}</span></label><button onClick={()=>{onReuseReferences?.(row.spec);setNotes(row.material_notes||'');}}>沿用這段素材</button><details><summary>查看輸入與輸出</summary><p>{row.template?.name}</p><pre>{row.requirement}</pre><pre>{row.result}</pre></details></div>)}</div>
       </details>
       <label>結尾／連續性補充（選填）<textarea rows={2} value={endingNotes} onChange={e=>setEndingNotes(e.target.value)} placeholder="只有成片和提示詞不同，或有額外狀態要提醒時才填"/></label>
-      <label>使用者要求<textarea aria-label="AI 使用者要求" rows={4} value={requirement} onChange={e=>onRequirement(e.target.value)} placeholder="角色、事件、動作、對白、風格與想要的結果…"/></label>
+      <label>使用者要求<PromptInput mentions={refs} aria-label="AI 使用者要求" rows={4} value={requirement} onValueChange={onRequirement} placeholder="角色、事件、動作、對白、風格與想要的結果…"/></label>
       <button onClick={onPickReferences}>選擇／修改本次素材</button><div className="assistant-ref-list">{refs.map((r:any)=><span key={r.edge.id}>{r.tag} · {r.asset.name}<button aria-label={'移除 '+r.asset.name} onClick={()=>onRemoveReference?.(r.edge.id)}>×</button></span>)}</div>
       <label>素材補充說明<textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="影片僅提供開頭抽樣影格；音檔不會被聽取。可在此補充動作、聲線、台詞等資訊。" rows={2}/></label>
     </div><div className="prompt-result-column">
@@ -44,7 +45,7 @@ export function PromptPanel({projectId,nodeId,api,getSpec,saveProject,onClose,on
       {active&&active.status!=='running'&&<button onClick={async()=>{try{await api('/prompt-assistant/drafts/'+active.id,{method:'DELETE'});setJobs(j=>j.filter(x=>x.id!==active.id));setActive(null);setResult('');}catch(e:any){notify(e.message);}}}>刪除此筆提示詞紀錄</button>}
       {active?.status==='running'&&<p className="help">正在串流輸出…完成後可編輯或套用。</p>}
       {active?.error&&<p className="error-message">{active.error}</p>}{active?.warnings?.map((w:string)=><p className="help" key={w}>{w}</p>)}
-      <textarea aria-label="AI 提示詞草稿" className="draft-editor" readOnly={active?.status==='running'} placeholder="模型結果會出現在此；可修改後再套用。" value={result} onChange={e=>setResult(e.target.value)}/>
+      <PromptInput mentions={refs} aria-label="AI 提示詞草稿" className="draft-editor" readOnly={active?.status==='running'} placeholder="模型結果會出現在此；可修改後再套用。" value={result} onValueChange={setResult}/>
       <footer><button disabled={!result.trim()||running} onClick={()=>apply(false)}>套用至節點</button>{!textMode&&<button className="primary" disabled={!result.trim()||running} onClick={()=>apply(true)}>套用並生成影片（使用生成服務額度）</button>}</footer>
     </div></div>
   </section></div>;

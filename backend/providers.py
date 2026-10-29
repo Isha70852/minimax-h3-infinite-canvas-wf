@@ -105,7 +105,7 @@ class ComfyUI:
             for key in ('gifs', 'videos', 'images', 'audio', 'latents'):
                 for item in node.get(key, []):
                     if item.get('filename'):
-                        (latents if key=='latents' else outputs).append({'url': self.base + '/view?' + urlencode({k: item[k] for k in ('filename', 'subfolder', 'type') if k in item}), 'filename': item['filename']})
+                        (latents if key=='latents' else outputs).append({'url': self.base + '/view?' + urlencode({k: item[k] for k in ('filename', 'subfolder', 'type') if k in item}), 'filename': item['filename'], 'node_id':str(node_id)})
         result = {'status': 'success', 'outputs': outputs, 'latents':latents}
         if self.native_proxy:
             # RH history omits `completed` and returns only published file types.
@@ -171,7 +171,7 @@ class RunningHub:
             for r in body.get('results', []):
                 if not r.get('url') or (self.settings.get('output_nodes') and str(r.get('nodeId')) not in self.settings['output_nodes']): continue
                 ext = str(r.get('outputType') or '').lower().lstrip('.')
-                item = {'url':r['url'], 'filename':'result.'+ext}
+                item = {'url':r['url'], 'filename':'result.'+ext,'node_id':str(r.get('nodeId'))}
                 (latents if ext in ('zip','safetensors','latent') else media).append(item)
             return {'status': 'success', 'usage': body.get('usage'), 'task_usage_list': body.get('taskUsageList', []), 'outputs':media, 'latents':latents}
         if status in ('FAILED', 'FAILURE', 'CANCELED'):

@@ -7,6 +7,8 @@ export function resolutionLabel(mp, aspect) {
 }
 export const modeNames = {
   T2VA: "文生影片",
+  I2VA: "首幀生影片",
+  L2VA: "尾幀生影片",
   FL2VA: "首尾生影片",
   Ref2VA: "參考生影片",
 };
@@ -41,7 +43,7 @@ export function duplicateNode(node, edges) {
 }
 export function referenceRows(nodeId, edges, assets) {
   const rows = edges
-    .filter((e) => e.target === nodeId)
+    .filter((e) => e.target === nodeId && e.targetHandle!=="drive_audio")
     .map((e) => ({
       edge: e,
       asset: assets.find((a) => a.id === e.data?.asset_id),

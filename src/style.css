@@ -1767,3 +1767,16 @@ main {
 .node-template-bar .preset-check, .template-editor > .preset-check { display:flex; flex-direction:row; align-items:center; gap:8px; white-space:nowrap; }
 .preset-check input[type="checkbox"] { width:18px; height:18px; flex:0 0 18px; margin:0; }
 .seed-result { overflow-wrap:anywhere; user-select:text; }
+
+.node-name{min-width:0;flex:1;width:100%;border:0;background:transparent;color:inherit;font:inherit;padding:3px 5px;}
+.node-name:focus{outline:1px solid #777;border-radius:5px;}
+
+.mention-popup{position:fixed;z-index:10000;width:290px;max-height:230px;overflow-y:auto;background:#202020;border:1px solid #555;border-radius:12px;padding:5px;box-shadow:0 8px 28px #0009;}
+.mention-popup button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:7px;border:0;background:transparent;border-radius:7px;color:#eee;}
+.mention-popup button:hover,.mention-popup button[aria-selected=true]{background:#383838;}
+.mention-popup img,.mention-popup video,.mention-audio{width:42px;height:42px;object-fit:cover;border-radius:6px;flex-shrink:0;background:#111;}
+.mention-audio{display:grid;place-items:center;font-size:24px;}
+.mention-popup button>span:last-child{min-width:0;display:flex;flex-direction:column;gap:3px;}
+.mention-popup small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#aaa;}
+.advanced-body label.check-row,.model-settings label.check-row{display:flex!important;flex-direction:row!important;justify-content:flex-start;align-items:center;gap:8px;line-height:1.4;}
+.advanced-body .check-row input[type=checkbox]{width:17px!important;height:17px;flex:0 0 17px;margin:0;order:-1;}

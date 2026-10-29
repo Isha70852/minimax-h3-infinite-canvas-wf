@@ -19,7 +19,7 @@ class Template(BaseModel):
 
 def clean(category, spec):
     if category == 'video':
-        allowed = set(Generation.model_fields) - {'prompt','prompt_source','references','motion_context','context_run_id','context_video_asset_id'}
+        allowed = set(Generation.model_fields) - {'prompt','prompt_source','references','motion_context','context_run_id','context_video_asset_id','drive_audio_asset_id'}
         result = {k:v for k,v in spec.items() if k in allowed}
         validated = Generation.model_validate({**result, 'prompt':'validation'})
         if 'noise_seed' in result: result['noise_seed']=validated.noise_seed

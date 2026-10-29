@@ -1,3 +1,4 @@
+import {NodeName} from './GenerationControls';
 import {TemplateBar} from './NodeTemplates';
 import React,{useEffect} from 'react';
 import {Maximize2,Copy,Trash2,Image as ImageIcon} from 'lucide-react';
@@ -36,7 +37,7 @@ export function ImageNode({id,data,selected,ctx,Media,Usage}:any){
   return <article className={'canvas-card asset image-generation '+(selected?'is-selected':'')}>
     <NodeResizer isVisible={selected} minWidth={320} minHeight={220}/>
     {!selected&&inputFields.map((f:any,i:number)=><Handle key={f.key} type="target" id={f.key} position={Position.Left} style={{top:65+i*32}} title={f.label}/>)}
-    <header><span className="node-icon"><ImageIcon size={15}/></span><span>{data.label}</span><small>IMAGE</small></header>
+    <header><span className="node-icon"><ImageIcon size={15}/></span><NodeName value={data.label} onChange={(name:string)=>ctx.rename(id,name)}/><small>IMAGE</small></header>
     <div className="card-media" onDoubleClick={()=>output&&ctx.preview(output)}>{output?<><Media asset={output}/><button className="expand nodrag" title="放大查看" onClick={()=>ctx.preview(output)}><Maximize2 size={17}/></button></>:<div className="generation-placeholder"><strong>{definition?.name}</strong><span>{active?'圖片生成中…':'選取節點，設定輸入後生成'}</span></div>}</div>
     {selected&&<div className="node-composer audio-composer nodrag nowheel" onDoubleClick={e=>e.stopPropagation()}>
       <TemplateBar category={'image'} spec={spec} onApply={(next:any)=>next.workflow!==spec.workflow?ctx.resetImage(id,next):ctx.editImage(id,next)}/>

@@ -31,7 +31,7 @@ from . import image_workflows
 from .image_workflows import ImageGeneration
 from .audio_workflows import AudioGeneration, REGISTRY, catalog, compile_audio, resolve_text
 from .providers import provider, ProviderRejected
-from .workflow import Generation, compile_workflow, MODELS, LORAS, ASPECTS, ROOT
+from .workflow import VIDEO_REGISTRY, Generation, compile_workflow, MODELS, LORAS, ASPECTS, ROOT
 
 workers = {}
 ACTIVE = {'uploading', 'submitting', 'queued', 'running', 'downloading', 'reconnecting'}
@@ -66,6 +66,8 @@ def assets_for(spec):
     assets = {ref.asset_id: require('assets', ref.asset_id) for ref in spec.references}
     if isinstance(spec, Generation) and spec.context_video_asset_id:
         assets[spec.context_video_asset_id] = require('assets', spec.context_video_asset_id)
+    if isinstance(spec, Generation) and spec.drive_audio_asset_id:
+        assets[spec.drive_audio_asset_id]=require('assets',spec.drive_audio_asset_id)
     return assets
 
 
@@ -122,8 +124,10 @@ async def execute(id):
                                     async for chunk in response.aiter_bytes():
                                         file.write(chunk)
                         kind = 'video' if ext in ('.mp4', '.webm', '.mov') else 'audio' if ext in ('.wav', '.mp3', '.flac', '.ogg') else 'image'
+                        generation_pass=run.get('compiled',{}).get('output_passes',{}).get(str(output.get('node_id')))
+                        pass_name={'first':'一採','second':'二採'}.get(generation_pass,'生成結果')
                         aid = uuid.uuid4().hex
-                        asset = db.put('assets', aid, {'scope': 'project', 'project_id': run['project_id'], 'name': f"生成結果 {len(outputs) + 1}{ext}", 'filename': filename, 'kind': kind, 'url': '/media/' + filename, 'run_id': id, 'size': path.stat().st_size})
+                        asset = db.put('assets', aid, {'scope': 'project', 'project_id': run['project_id'], 'name': f"{pass_name} {len(outputs) + 1}{ext}", 'generation_pass':generation_pass, 'output_node_id':output.get('node_id'), 'filename': filename, 'kind': kind, 'url': '/media/' + filename, 'run_id': id, 'size': path.stat().st_size})
                         outputs.append(asset)
                     except Exception:
                         path.unlink(missing_ok=True)
@@ -218,7 +222,7 @@ async def invalid(request, error):
 def config():
     values = db.settings()
     profiles = values.get('models') or [{'name': name, 'shift_enabled': False, 'shift_video': 6, 'shift_audio': 3} for name in MODELS]
-    return {'node_templates': node_templates.templates(), 'models': [m['name'] for m in profiles], 'model_profiles': profiles, 'image_workflows': image_workflows.catalog(), 'audio_workflows': catalog(), 'video_defaults': values.get('video_defaults', {}), 'loras': values.get('loras') or LORAS, 'aspects': ASPECTS}
+    return {'node_templates': node_templates.templates(), 'models': [m['name'] for m in profiles], 'model_profiles': profiles, 'image_workflows': image_workflows.catalog(), 'audio_workflows': catalog(), 'video_two_pass_parameters': VIDEO_REGISTRY['two_pass_parameters'], 'video_defaults': values.get('video_defaults', {}), 'loras': values.get('loras') or LORAS, 'aspects': ASPECTS}
 
 
 @app.get('/api/capabilities')
@@ -488,7 +492,7 @@ async def start_run(body: RunRequest):
             raise ValueError('請使用導演台啟用 motion context。')
         if body.spec.context_run_id:
             previous=require('runs',body.spec.context_run_id)
-            videos=[a for a in previous.get('outputs',[]) if a.get('kind')=='video']
+            videos=sorted([a for a in previous.get('outputs',[]) if a.get('kind')=='video'],key=lambda a:a.get('generation_pass')=='second')
             if previous['project_id']!=body.project_id or previous['status']!='success' or not videos:
                 raise ValueError('前段必須為同專案已完成且含影片輸出的生成。')
             context_id=body.spec.context_video_asset_id or videos[0]['id']
@@ -497,14 +501,17 @@ async def start_run(body: RunRequest):
     assets = assets_for(body.spec)
     if any(not library.belongs(a, body.project_id) or a.get('deleted') for a in assets.values()):
         raise ValueError('引用素材不屬於此專案或已刪除，請先匯入專案素材。')
-    seed = int(body.spec.noise_seed) if isinstance(body.spec,Generation) and body.spec.noise_seed is not None else secrets.randbits(63)
+    if isinstance(body.spec,Generation) and body.spec.seed_mode=='fixed' and body.spec.noise_seed is None: raise ValueError('Fixed 模式請填入 Noise seed。')
+    seed = int(body.spec.noise_seed) if isinstance(body.spec,Generation) and body.spec.seed_mode!='randomize' and body.spec.noise_seed is not None else secrets.randbits(63)
     if isinstance(body.spec,Generation): body.spec=body.spec.model_copy(update={'noise_seed':str(seed)})
     compiled = compile_spec(body.spec, assets, seed=seed)
     settings = db.settings()
     is_motion = isinstance(body.spec,Generation) and body.spec.motion_context
     settings['native_comfy'] = False
-    if is_motion:
-        settings['workflow_id'] = settings.get('motion_workflow_id', '')
+    if isinstance(body.spec,Generation):
+        if body.spec.instance_type is not None: settings['instance_type']=body.spec.instance_type
+        # All video modes now use the same uploaded unified workflow.
+        settings['workflow_id']=settings.get('workflow_id','')
     if isinstance(body.spec, ImageGeneration):
         settings['workflow_id'] = settings.get('image_workflow_ids', {}).get(body.spec.workflow, '')
     if isinstance(body.spec, AudioGeneration):

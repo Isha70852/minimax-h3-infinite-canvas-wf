@@ -1,3 +1,4 @@
+import {NodeName} from './GenerationControls';
 import {TemplateBar} from './NodeTemplates';
 import {AudioPlayer} from './AudioPlayer';
 import {Copy,Trash2,Music2} from 'lucide-react';
@@ -16,7 +17,7 @@ export function AudioNode({id,data,selected,ctx,Media,Usage}:any) {
   return <article className={'canvas-card audio-generation compact-audio '+(selected?'is-selected':'')}>
     <NodeResizer isVisible={selected} minWidth={320} minHeight={136} maxHeight={136}/>
     {!selected&&definition?.fields.filter((f:any)=>['text','audio'].includes(f.type)).map((f:any,i:number)=><Handle key={f.key} type="target" id={f.key} position={Position.Left} style={{top:45+i*18}} title={f.label+' 輸入'} aria-label={f.label+' 輸入'}/>)}
-    <header><Music2 size={15}/><span>{data.label}</span><small>{data.kind==='music'?'MUSIC':'TTS'}</small></header>
+    <header><Music2 size={15}/><NodeName value={data.label} onChange={(name:string)=>ctx.rename(id,name)}/><small>{data.kind==='music'?'MUSIC':'TTS'}</small></header>
     <div className="card-media">{output?<Media asset={output} controls/>:<div className="generation-placeholder"><span>{active?'聲音生成中…':definition?.name+' · 選取後設定'}</span></div>}</div>
     {selected&&<div className="node-composer audio-composer nodrag nowheel" onDoubleClick={e=>e.stopPropagation()}>
       <TemplateBar category={data.kind} spec={spec} onApply={(next:any)=>next.workflow!==spec.workflow?ctx.resetAudio(id,next):ctx.editAudio(id,next)}/>

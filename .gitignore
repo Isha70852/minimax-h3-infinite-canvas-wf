@@ -34,3 +34,17 @@ AGENTS.md
 # Recoverable prompt edits
 prompts/.trash/
 prompts/.*.tmp
+
+# Only explicitly approved prompt templates may be published
+prompts/*
+!prompts/anima.md
+!prompts/breeze_tts2_voice_design.md
+!prompts/breeze_tts2_voice_direction.md
+!prompts/flux2_klein.md
+!prompts/minimax_h3_人物圖.md
+!prompts/minimax_h3_人物圖_聲音_背景物件.md
+!prompts/moss_image.md
+!prompts/qwen3_tts_voice_design.md
+!prompts/yue2_cover.md
+!prompts/yue2_text_to_music.md
+!prompts/z_image.md

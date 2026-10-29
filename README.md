@@ -73,7 +73,7 @@ Configure a video, image, music or TTS node, then expand **Node templates** to s
 
 ## Noise seeds and AI prompt files
 
-Video advanced settings accept a **Noise seed**; leave it empty for a new random seed. Results, history and directors show the actual seed, with actions to reuse it. The API accepts `spec.noise_seed` as a decimal string (0–18446744073709551615) and returns `seed` as a string to preserve integer precision. Equal seeds do not guarantee equal results across models, settings or environments. RH coins apply only to RunningHub. Local ComfyUI needs no billing fields; its displayed elapsed time includes queueing and output storage.
+Video advanced settings accept a **Noise seed**; choose `randomize` for a new seed on each submission, or `fixed` and enter a seed to reuse it. Results, history and directors show the actual seed, with actions to reuse it. The API accepts `spec.noise_seed` as a decimal string (0–18446744073709551615) and returns `seed` as a string to preserve integer precision. Equal seeds do not guarantee equal results across models, settings or environments. RH coins apply only to RunningHub. Local ComfyUI needs no billing fields; its displayed elapsed time includes queueing and output storage.
 
 `prompts/` supplies AI writing templates. Each UTF-8 `.md` or `.txt` file becomes one template: its filename stem is the display name and its full text is the instruction content. Included examples cover H3, images, music and TTS; choose one appropriate to your task. These instructions are separate from generation workflow graphs and node parameter presets (which remain in local data).
 
@@ -81,7 +81,7 @@ Video advanced settings accept a **Noise seed**; leave it empty for a new random
 
 ## Advanced: unexposed models and parameters
 
-1. Back up the JSON you will edit. Normal video uses `workflow_template.json`; MP4 motion context uses `workflows/video_motion_mp4.json`. Edit both when a change should apply to both modes.
+1. Back up the JSON you will edit. All video modes now use `workflows/video_unified.json`, selected by `workflows/video_registry.json`. The older `workflow_template.json` and `video_motion_mp4.json` are retained legacy files, not the active video graphs.
 2. For images/audio, find the function's `template` in `workflows/image_registry.json` or `workflows/audio_registry.json`; audio entries without a template use `<function ID>.json`. In the runtime graph, edit the relevant loader's actual text-encoder/VAE filename or other fixed input. Compatible weights and nodes must exist on the provider. Editing `example_workflows/` alone does not change the runtime.
 3. Preserve node IDs, class types, links and input types. Exposed UI/API parameters overwrite graph defaults during compilation; change those through the UI or node presets. FLUX encoder pairing also uses image registry `model_clip`, which must be updated accordingly.
 4. A workflow replacement that changes node IDs/input names requires registry updates (including `video_registry.json` for video). Exposing new controls may require schema/compiler/UI changes. Changing only a fixed loader filename usually does not.
@@ -114,3 +114,17 @@ Special thanks:
 - [KJ / ComfyUI-KJNodes](https://github.com/kijai/ComfyUI-KJNodes)
 - [T8 / comfyui-minimax-h3-audio-T8](https://github.com/T8mars/comfyui-minimax-h3-audio-T8)
 - [Motion Context / ComfyUI-H3-Motion-Context](https://github.com/NikoDemon80/ComfyUI-H3-Motion-Context)
+
+## Unified video generation
+
+Import the new `MiniMax_H3_一採保留_二採Latent放大_無限畫布.json` from `example_workflows/` into RunningHub and set its ID in the video workflow setting. Normal video, motion context, two-pass upscale, and motion context with upscale all use this **one workflow ID**. The previous separate motion ID is no longer used. Local ComfyUI needs the corresponding installed T8 nodes/models but no workflow ID.
+
+- Enable **二採放大** in advanced settings; `scale_by` defaults to 2. Remaining controls use the supplied workflow defaults, including the first-pass schedule. Expand the complete parameter groups to override them. Both saved outputs use **24 fps**.
+- Keep **同時保存一採影片** enabled to save both results; otherwise only the second-pass video is saved. The first pass still runs internally. Output assets include `generation_pass: first/second` and `output_node_id`; UI names identify the pass.
+- Generate continuations through the director's **生成此段**. Auto selection prefers the previous successful run's first-pass video, falling back to second-pass. Select a particular output when needed. Without a previous clip, both overlap trims are bypassed.
+- `audio_mode` defaults to `native`. `lock_source` and `remix_source` require a separate **drive audio** input (audio asset or connected audio node). It is not automatically added to reference-audio numbering. Both passes receive the same materials. Assign image roles explicitly: I2VA = first, L2VA = last, FL2VA = first + last, Ref2VA = reference. Invalid combinations are rejected before submission.
+- RunningHub's per-node instance override offers Standard / Plus / Ultra; an empty override inherits settings. It has no effect on local ComfyUI. Higher-resolution refinement can require substantially more VRAM.
+- Node titles are editable directly. `@` suggestions use already connected reference materials and insert at the cursor. Video mute state is retained when opening the enlarged player.
+- Only the 11 approved filenames listed in `scripts/public_prompts.json` are included in release archives. New prompt files are ignored by Git by default; publishing a new template requires explicit approval and an allowlist update.
+
+Automation clients should refresh `/catalog` and use `seed_mode`, `audio_mode`, `drive_audio_asset_id`, `two_pass`, `save_first_pass`, `two_pass_parameters`, and optional `instance_type` from the Generation schema. Two-pass defaults are in `/catalog.config.video_two_pass_parameters`. See the bundled canvas API skill for exact bindings.
