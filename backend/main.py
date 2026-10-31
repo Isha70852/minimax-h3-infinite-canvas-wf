@@ -199,6 +199,8 @@ async def lifespan(app):
 app = FastAPI(title='H3 Canvas', lifespan=lifespan)
 app.include_router(prompting.router)
 app.include_router(node_templates.router)
+from . import archive
+app.include_router(archive.router)
 from . import chatgpt_auth
 app.include_router(chatgpt_auth.router)
 

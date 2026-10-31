@@ -84,3 +84,14 @@ All video combinations use the configured unified workflow ID; do not request a 
 - `mode:T2VA` requires no references; I2VA one image role first; L2VA one image role last; FL2VA two images roles first and last; Ref2VA reference roles. Do not send keyframes as ref_images. Drive audio is separate and may accompany any mode.
 - Optional `instance_type:"default"|"plus"|"ultra"` overrides RunningHub resources for this run. Null inherits global settings; local ComfyUI ignores it.
 - Rename any canvas node by changing its `data.label` through the optimistic project PUT API, preserving other nodes/edges and the server's latest updated_at.
+
+
+### Canvas comparison and keyframe slots
+- A comparison is a saved canvas node: `type: "card"`, `data: {"kind":"compare","label":"Compare"}`, `style: {"width":760,"height":560}`. Connect two image/video asset or generation nodes with edges whose `targetHandle` is `a` / `b` and `data.asset_id` is the corresponding output asset ID. It is a viewer, not a generation workflow; do not submit it to `/runs`.
+- Video references retain explicit API roles: I2VA needs one image with `role:first`; L2VA one with `role:last`; FL2VA both. Additional audio/video references use `role:reference`. Ref2VA uses reference roles; T2VA has no references. The UI assigns the image roles through labeled slots; automation must still supply them explicitly. `<Picture N>` numbering follows the ordered references, independently of the slot label. Drive audio remains a separate `drive_audio_asset_id`.
+
+
+### Canvas groups
+Use the existing optimistic-concurrency project PUT; no new generation endpoint is needed. A group is a `type: "card"` node with `data: {"kind":"group","label":"Group","collapsed":false}`, a top-level absolute position, `style.width/height`, `dragHandle: ".canvas-group-header"`, and `zIndex:-1`. Place groups before their children in the nodes array. Members have `parentId` set to the group ID and positions relative to the group origin. Keep original child IDs and edges. Toggle `data.collapsed` only; do not write derived hidden flags or shrink the stored group size. Ungroup by adding the group position to member positions and removing their parentId. No nested groups. Do not submit group nodes to /runs.
+
+Avoid concurrent graph edits while the user is editing the same project: browser saves are full replacements, not collaborative merges. Polling results and media playback are read-only. Connection visibility and playback volume are presentation preferences and do not change generation parameters.

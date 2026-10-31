@@ -108,4 +108,8 @@ export function VideoDefaults({config,value,onChange}:any){
   </div><AdvancedSettings spec={value} config={config} onChange={change}/></div>;
 }
 
-export function NodeName({value,onChange}:any){return <input className="node-name nodrag" aria-label="節點名稱" title="編輯節點名稱" value={value} onChange={e=>onChange(e.target.value)} onKeyDown={e=>e.stopPropagation()} onDoubleClick={e=>e.stopPropagation()}/>;}
+export function NodeName({value,onChange}:any){
+ const ref=useRef<HTMLInputElement>(null),composing=useRef(false);
+ useEffect(()=>{if(ref.current&&document.activeElement!==ref.current)ref.current.value=value||'';},[value]);
+ return <input ref={ref} className="node-name nodrag nowheel" aria-label="節點名稱" title="編輯節點名稱（Enter 或離開欄位儲存）" defaultValue={value} onCompositionStart={()=>{composing.current=true;}} onCompositionEnd={()=>{composing.current=false;}} onBlur={e=>{const name=e.currentTarget.value.trim();if(name&&name!==value)onChange(name);else e.currentTarget.value=value;}} onKeyDown={e=>{e.stopPropagation();if(e.key==='Enter'&&!composing.current&&!e.nativeEvent.isComposing)e.currentTarget.blur();if(e.key==='Escape'){e.currentTarget.value=value;e.currentTarget.blur();}}} onPointerDown={e=>e.stopPropagation()} onDoubleClick={e=>e.stopPropagation()}/>;
+}

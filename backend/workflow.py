@@ -83,8 +83,8 @@ def ordered_references(spec, assets):
         raise ValueError('文生影片不使用素材，請移除引用或改用參考生影片。')
     expected = {'I2VA':['first'], 'L2VA':['last'], 'FL2VA':['first','last']}
     if spec.mode in expected:
-        if sorted(r['role'] for r in refs) != expected[spec.mode]:
-            raise ValueError('請依模式指定首幀／尾幀圖片，且不要混入參考素材。')
+        if sorted(r['role'] for r in refs if r['kind']=='image') != expected[spec.mode]:
+            raise ValueError('請依模式指定首幀／尾幀圖片，不接受額外參考圖片。')
     elif any(r['role'] != 'reference' for r in refs):
         raise ValueError('首／尾幀請使用對應的生成模式。')
     if spec.mode == 'Ref2VA' and not refs:

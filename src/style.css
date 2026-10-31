@@ -1780,3 +1780,10 @@ main {
 .mention-popup small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#aaa;}
 .advanced-body label.check-row,.model-settings label.check-row{display:flex!important;flex-direction:row!important;justify-content:flex-start;align-items:center;gap:8px;line-height:1.4;}
 .advanced-body .check-row input[type=checkbox]{width:17px!important;height:17px;flex:0 0 17px;margin:0;order:-1;}
+
+.create-menu{overflow-y:auto;overscroll-behavior:contain;}
+.connection-switch{width:9px;height:9px;border-radius:50%;background:#555;}.connection-switch.on{background:#9ac5eb;}
+.canvas-group{height:100%;border:1px solid #63768a;border-radius:12px;background:#70859a12;pointer-events:none;}.canvas-group-header{pointer-events:auto;display:flex;align-items:center;gap:12px;padding:10px 14px;background:#25303be8;border-radius:11px 11px 0 0;cursor:grab;}.canvas-group-header .node-name{flex:1;min-width:70px;}.canvas-group-header>div{display:flex;gap:6px;}.canvas-group-header button{padding:5px 10px;white-space:nowrap;}.canvas-group>p{padding:8px 14px;color:#aebbc8;font-size:13px;}
+.react-flow__node.node-running{border-radius:12px;box-shadow:0 0 0 2px #72baff55,0 0 22px #429cff33;animation:running-glow 2.8s ease-in-out infinite;}
+@keyframes running-glow{50%{box-shadow:0 0 0 2px #72baff88,0 0 28px #429cff55;}}
+@media(prefers-reduced-motion:reduce){.react-flow__node.node-running{animation:none;}}

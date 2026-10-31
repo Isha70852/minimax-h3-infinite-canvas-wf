@@ -128,3 +128,22 @@ Colab 文件可在 Google Colab 開啟，依筆記本設定執行環境與認證
 - 發布僅包含 `scripts/public_prompts.json` 列出的 11 個已同意公開模板。新增模板預設不加入 Git／release，需另外指定並更新清單。
 
 AI 操縱端請重新讀取 `/catalog`，依 Generation schema 設定 `seed_mode`、`audio_mode`、`drive_audio_asset_id`、`two_pass`、`save_first_pass`、`two_pass_parameters`、`instance_type`。二採預設值由 `/catalog.config.video_two_pass_parameters` 提供，接法請參考隨附 skill。
+
+## 本機素材檢視與比較
+
+左上「素材檢視」開啟完整分頁。畫布生成的圖片、影片、音樂會自動列入；可輸入資料夾路徑，或按「選擇」瀏覽本機磁碟，再按「加入」。包含子資料夾，檔案不會被複製或搬動；移除來源也不會刪檔。新增檔案後按「重新掃描」。來源路徑與縮圖快取分別保存在本機 SQLite 與 `data/archive-thumbnails/`，不包含於分享包。
+
+點選素材可預覽、複製提示詞、查看參數和原始紀錄。支援畫布任務紀錄、Colab 同名 TXT 的 `PROMPT BEGIN/END`、ComfyUI 媒體內嵌 prompt/workflow、PNG 的 WebUI parameters 與 JPEG/WebP EXIF UserComment，以及音樂檔的媒體標籤。不同來源分開顯示，不自動覆蓋衝突值；未保存的生成資訊無法還原。ComfyUI 參數來自靜態接線分析，不是重新執行工作流。若電腦有 ffprobe，會顯示更完整的串流資訊；沒有時使用既有 ffmpeg 讀取標籤。瀏覽器無法播放的編碼仍可查看可讀取的參數。
+
+檢視分頁可選兩個圖片／影片後按「比較」；畫布左側也有 **A/B** 按鈕，從目前專案選擇。可切換並排、直桿拖曳及交換左右。影片使用靜音同步播放與共同時間軸，以較短影片為限；這是預覽同步，非逐影格校準。不同尺寸維持比例並補空白，不會裁切原檔。
+
+素材檢視入口位於右側「專案生成內容」上方，預設顯示目前專案素材，可切換全部專案；外部資料夾獨立於專案範圍。畫布新增選單也能建立「圖片／影片比較」節點，將兩個來源接到 A、B 即可並排或直桿比較。影片聲音可選 A、B、兩者或靜音。首／尾幀模式使用對應圖片框，自動設定用途；聲音、影片另行加入，送出仍使用標準 Picture／Audio／Video 編號。
+
+### 畫布操作與播放
+- 按住 Shift 多選未分組節點，再按左側「群組」。拖曳群組標題可整組移動；「排列」將成員排成網格，「收合／展開」保留原本相對位置，「解散」保留節點與連線。不支援巢狀群組。
+- 左側連線開關只隱藏連線，不移除引用。執行中的節點帶有淡藍光暈。
+- 節點名稱在 Enter 或離開欄位時儲存，Escape 取消此次編輯。新增選單超出可用高度時可捲動。
+- 設定中的全域播放音量立即套用現有與新增播放器，保存在此瀏覽器；各播放器靜音狀態仍獨立。
+- 生成結果、素材與專案列表分批顯示，可按「載入更多」；畫布運行狀態仍持續更新。
+- AI 與人可同時查看、播放，但不建議同時編輯同一專案。Automation PUT 有 If-Match 檢查，網頁存檔仍是整份畫布更新，沒有完整多人協作合併。
+- ChatGPT OAuth 訂閱生圖尚未提供：官方 Sign in with ChatGPT plan usage 預覽限制明列 image generation 不支援，不能將 Codex 內建生圖視為此應用可直接呼叫的訂閱 API。參見 https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations 。

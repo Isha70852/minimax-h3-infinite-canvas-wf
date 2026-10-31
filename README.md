@@ -128,3 +128,22 @@ Import the new `MiniMax_H3_一採保留_二採Latent放大_無限畫布.json` fr
 - Only the 11 approved filenames listed in `scripts/public_prompts.json` are included in release archives. New prompt files are ignored by Git by default; publishing a new template requires explicit approval and an allowlist update.
 
 Automation clients should refresh `/catalog` and use `seed_mode`, `audio_mode`, `drive_audio_asset_id`, `two_pass`, `save_first_pass`, `two_pass_parameters`, and optional `instance_type` from the Generation schema. Two-pass defaults are in `/catalog.config.video_two_pass_parameters`. See the bundled canvas API skill for exact bindings.
+
+## Local media archive and comparison
+
+Open **素材檢視** in the upper-left navigation. Canvas-generated images, videos and music are listed automatically. Enter a folder path, or browse local drives with **選擇**, then **加入**. Subfolders are included. Media stays in place; removing a source does not delete files. Use **重新掃描** after adding files. Folder registrations are stored in local SQLite; thumbnails in `data/archive-thumbnails/`. Neither is shared in releases.
+
+Select media to preview, copy prompts, and inspect parameters or raw records. Readers cover canvas runs, same-stem Colab TXT files with `PROMPT BEGIN/END`, embedded ComfyUI prompt/workflow graphs, WebUI PNG parameters and JPEG/WebP EXIF UserComment, and music container tags. Sources remain separate when values conflict. Missing generation metadata cannot be reconstructed. ComfyUI summaries are static graph analysis, not workflow execution. Optional ffprobe provides richer stream information; bundled ffmpeg is the fallback for tags. Browser codec support determines playback availability.
+
+Choose two images/videos and press **比較**, or use the canvas toolbar's **A/B** button for project media. Switch between side-by-side and draggable wipe views, swap sides, and use the muted synchronized timeline for videos. Playback stops at the shorter clip; browser synchronization is not frame-accurate measurement. Images are fitted proportionally with letterboxing; originals are unchanged.
+
+Open Media Archive above the right-hand project generation history. It defaults to the current project and can include all projects; registered external folders are independent of project scope. Add an image/video comparison node from the canvas menu and connect sources to A and B for side-by-side or wipe preview. Audio can play from A, B, both, or neither. Keyframe modes use labeled first/last image slots with automatic roles; audio/video references remain separate and canonical Picture/Audio/Video numbering is preserved.
+
+### Canvas controls and playback
+- Shift-select ungrouped nodes and choose Group on the left toolbar. Drag the group header to move its members; arrange into a grid, collapse/expand without changing relative positions, or ungroup while preserving nodes and edges. Nested groups are not supported.
+- The connection switch hides lines without disconnecting references. Active generation nodes have a subtle blue glow.
+- Node names commit on Enter or blur; Escape cancels editing. The creation menu scrolls within the viewport.
+- Global playback volume in Settings applies to existing and new players and persists in this browser. Individual mute controls remain independent.
+- Results, assets and project lists render in batches with Load more. Generation status continues to update.
+- Humans and automation can browse/play concurrently, but avoid simultaneous edits to the same project. Automation PUT checks If-Match; browser saves still replace the canvas without full collaborative merging.
+- ChatGPT subscription image generation is not integrated: official Sign in with ChatGPT plan-usage preview explicitly excludes image generation. Codex built-in image generation does not establish a supported direct subscription API for this app: https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations .
