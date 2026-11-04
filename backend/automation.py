@@ -56,7 +56,7 @@ def install(app, services):
     # Explicit allowlist. Never expose settings, credentials, arbitrary URLs or deletion.
     aliases=[('/projects','GET','projects'),('/projects','POST','new_project'),('/projects/{id}','GET','get_project'),
              ('/assets','GET','assets'),('/assets','POST','upload'),('/projects/{project_id}/import/{asset_id}','POST','import_asset'),
-             ('/workflow/preview','POST','preview'),('/runs','GET','runs')]
+             ('/runs/{id}/cancel','POST','cancel_run'),('/workflow/preview','POST','preview'),('/runs','GET','runs')]
     for path,method,name in aliases:
         router.add_api_route(path,services[name],methods=[method],name='automation_'+name)
     router.add_api_route('/node-templates',node_templates.templates,methods=['GET'])

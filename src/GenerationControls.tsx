@@ -1,3 +1,4 @@
+import {ProviderSelect} from './ProviderSettings';
 import {createPortal} from 'react-dom';
 import React, {forwardRef, useEffect, useImperativeHandle, useRef, useState} from 'react';
 
@@ -69,8 +70,10 @@ export function AdvancedSettings({spec,config,onChange,driveAudio}:any) {
         {shift&&<div className="advanced-grid"><label>Video Shift<NumberInput value={spec.shift_video??6} min={0} max={100} step={0.1} onValueChange={(n:number)=>onChange({shift_video:n})}/></label><label>Audio Shift<NumberInput value={spec.shift_audio??3} min={0} max={100} step={0.1} onValueChange={(n:number)=>onChange({shift_audio:n})}/></label></div>}
         <p className="help">768p 4step LoRA 預設 Shift 6 / 3；「4步加速」預設關閉。可在此覆寫；停用 LoRA 時 Shift 一起停用。</p>
       </fieldset>
-      <div className="advanced-grid"><label>Steps<NumberInput value={spec.steps??8} min={1} max={200} onValueChange={(n:number)=>onChange({steps:n})}/></label><label>Sampler<input value={spec.sampler??'euler'} onChange={e=>onChange({sampler:e.target.value})}/></label><label>Scheduler<input value={spec.scheduler??'beta'} onChange={e=>onChange({scheduler:e.target.value})}/></label></div>
-      <p className="help">預設 8 / euler / beta；自訂名稱需由工作流服務支援。</p>
+      <label>一採 Sigma 來源<select value={spec.sigma_mode||'scheduler'} onChange={e=>onChange({sigma_mode:e.target.value})}><option value="scheduler">BasicScheduler（預設）</option><option value="manual">ManualSigmas · 手動序列</option></select></label>
+      <div className="advanced-grid"><label>Sampler<input value={spec.sampler??'euler'} onChange={e=>onChange({sampler:e.target.value})}/></label>{spec.sigma_mode!=='manual'&&<><label>Steps<NumberInput value={spec.steps??8} min={1} max={200} onValueChange={(n:number)=>onChange({steps:n})}/></label><label>Scheduler<input value={spec.scheduler??'beta'} onChange={e=>onChange({scheduler:e.target.value})}/></label></>}</div>
+      {spec.sigma_mode==='manual'&&<label>Sigmas（逗號分隔）<textarea rows={3} value={spec.manual_sigmas??'1.0, 0.972973, 0.923077, 0.8, 0.571429, 0.333333, 0.0'} onChange={e=>onChange({manual_sigmas:e.target.value})}/></label>}
+      <p className="help">手動模式取代一採 BasicScheduler，Steps／Scheduler 不生效。預設序列有 7 個值，為 6 個採樣區間。二採精修仍使用原有規劃器；切換模式會保留兩邊設定。</p>
       <label className="check-row"><input type="checkbox" checked={!!spec.low_vram_enabled} onChange={e=>onChange({low_vram_enabled:e.target.checked})}/>啟用降低顯存（預設關閉）</label>
       {spec.low_vram_enabled&&<div className="advanced-grid"><label>Head chunks<NumberInput value={spec.head_chunks??(spec.megapixels>=1.5?8:4)} min={1} max={56} onValueChange={(n:number)=>onChange({head_chunks:n})}/></label><label>Chunks<NumberInput value={spec.chunks??(spec.megapixels>=1.5?4:2)} min={1} max={64} onValueChange={(n:number)=>onChange({chunks:n})}/></label></div>}
       <p className="help">分塊可降低顯存需求，可能增加耗時。建議 1.0 MP 用 4 / 2，≥ 1.5 MP 用 8 / 4；依顯存自行開啟。</p>
@@ -99,7 +102,7 @@ export function ModelSettings({settings,onChange}:any) {
 export function VideoDefaults({config,value,onChange}:any){
   const change=(patch:any)=>onChange({...value,...patch});
   return <div className="connection-block"><h3>新影片節點預設參數</h3><p className="help">儲存後只套用至之後新增的影片節點；既有節點保持原設定。</p><div className="advanced-grid">
-    <label>服務<select value={value.provider} onChange={e=>change({provider:e.target.value})}><option value="comfyui">本機 ComfyUI</option><option value="runninghub">RunningHub</option></select></label>
+    <label>服務<ProviderSelect config={config} spec={value} video onChange={change}/></label>
     <label>模式<select value={value.mode} onChange={e=>change({mode:e.target.value})}><option value="T2VA">文生影片</option><option value="Ref2VA">參考生影片</option><option value="I2VA">首幀生影片</option><option value="L2VA">尾幀生影片</option><option value="FL2VA">首尾生影片</option></select></label>
     <label>模型<select value={value.model} onChange={e=>change(modelSelection(e.target.value,config))}>{config.models.map((m:string)=><option key={m}>{m}</option>)}</select></label>
     <label>比例<select value={value.aspect_ratio} onChange={e=>change({aspect_ratio:e.target.value})}>{config.aspects.map((a:string)=><option key={a}>{a}</option>)}</select></label>

@@ -35,6 +35,12 @@ class ComfyUI:
     async def close(self):
         await self.client.aclose()
 
+    async def cancel(self, task_id):
+        queue=checked(await self.client.get('/queue'))
+        (await self.client.post('/queue',json={'delete':[task_id]})).raise_for_status()
+        if any(str(item[1])==task_id for item in queue.get('queue_running',[])):
+            (await self.client.post('/interrupt',json={'prompt_id':task_id})).raise_for_status()
+
     async def upload(self, asset):
         with (MEDIA / asset['filename']).open('rb') as file:
             body = checked(await self.client.post('/upload/image', files={'image': (asset['filename'], file)}, data={'type': 'input', 'overwrite': 'false'}))
@@ -120,6 +126,67 @@ class ComfyUI:
         return result
 
 
+class Colab(ComfyUI):
+    """Authenticated native graph bridge in the 20261102 notebook (video only)."""
+    def __init__(self, settings):
+        if not settings.get('colab_url') or not settings.get('colab_token'):
+            raise ValueError('請先設定 Colab H3_API_URL 及 API token。')
+        self.base = settings['colab_url'].rstrip('/')
+        self.output_nodes = settings.get('output_nodes', [])
+        self.native_proxy = False
+        self.settings = settings
+        self.download_headers = {'Authorization': 'Bearer ' + settings['colab_token']}
+        self.client = httpx.AsyncClient(base_url=self.base, headers=self.download_headers, timeout=120, trust_env=False)
+
+    async def cancel(self, task_id):
+        response=await self.client.post('/canvas/cancel/'+task_id)
+        if response.status_code==404: raise ValueError('Colab 尚未支援取消，請更新橋接儲存格並重跑 Cell 7。遠端任務仍會繼續。')
+        response.raise_for_status()
+
+    async def upload(self, asset):
+        kind = asset['kind']
+        endpoint, field = {'image':('/upload/image','image'), 'video':('/canvas/upload/video','video'), 'audio':('/upload/audio','audio')}[kind]
+        with (MEDIA / asset['filename']).open('rb') as file:
+            body = checked(await self.client.post(endpoint, files={field:(asset['filename'],file)}))
+        return '/'.join(x for x in (body.get('subfolder'),body['name']) if x)
+
+    async def preflight(self, graph):
+        try:
+            await super().preflight(graph)
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code != 404: raise
+            # Original 20261102 bridge exposes native submission but no object_info.
+            health = checked(await self.client.get('/health'))
+            if not health.get('ready'): raise ValueError('Colab 尚未就緒。')
+            routes = checked(await self.client.get('/openapi.json')).get('paths', {})
+            required = ['/prompt','/history/{prompt_id}','/upload/image','/canvas/upload/video','/canvas/result/{prompt_id}/{pass_name}']
+            if any(path not in routes for path in required):
+                raise ValueError('Colab 缺少完整工作流提交／輸出端點，請執行畫布 API 格。')
+            if any(n['class_type']=='LoadAudio' for n in graph.values()) and '/upload/audio' not in routes:
+                raise ValueError('此 Colab 版本未提供聲音上傳；使用聲音參考時請更新畫布 API 格。')
+            # ComfyUI validates actual node/model inputs on /prompt; do not rewrite the graph.
+
+    async def submit(self, graph, client_id, seed):
+        response = await self.client.post('/prompt', json={'prompt':graph,'client_id':client_id})
+        if response.status_code in (400,422):
+            raise ProviderRejected('Colab 工作流驗證失敗：'+response.text[:6000])
+        body = checked(response)
+        if body.get('error') or body.get('node_errors'):
+            raise ProviderRejected('Colab 工作流驗證失敗：'+json.dumps(body,ensure_ascii=False)[:6000])
+        return str(body['prompt_id'])
+
+    async def query(self, task_id):
+        result = await super().query(task_id)
+        if result['status']=='success':
+            routes = checked(await self.client.get('/openapi.json')).get('paths',{})
+            if '/view' not in routes:
+                for output in result['outputs']:
+                    name={'356':'first','357':'upscaled'}.get(output['node_id'])
+                    if not name: raise ValueError('舊版 Colab 僅提供 356/357 輸出下載，請更新畫布 API 格。')
+                    output['url']=self.base+'/canvas/result/'+task_id+'/'+name
+        return result
+
+
 class RunningHub:
     def __init__(self, settings):
         if not settings.get('runninghub_key'):
@@ -163,6 +230,9 @@ class RunningHub:
             raise ValueError('RunningHub 任務提交失敗。')
         return str(body['taskId'])
 
+    async def cancel(self, task_id):
+        rh_checked(await self.client.post('/task/openapi/cancel',json={'apiKey':self.settings['runninghub_key'],'taskId':task_id}))
+
     async def query(self, task_id):
         body = rh_checked(await self.client.post('/openapi/v2/query', json={'taskId': task_id}))
         status = body.get('status', '')
@@ -187,7 +257,7 @@ def provider(name, settings):
         if settings.get('instance_type') == 'ultra': raise ValueError('官方原生代理僅列出 Standard / Plus；導演台請選這兩種機型。')
         route = 'proxy-plus' if settings.get('instance_type')=='plus' else 'proxy'
         return ComfyUI({**settings,'comfy_url':'https://www.runninghub.ai/'+route+'/'+settings['runninghub_key']})
-    adapters = {'comfyui': ComfyUI, 'runninghub': RunningHub}
+    adapters = {'comfyui': ComfyUI, 'runninghub': RunningHub, 'colab': Colab}
     if name not in adapters:
         raise ValueError('不支援的運算服務：' + name)
     return adapters[name](settings)

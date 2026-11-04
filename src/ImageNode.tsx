@@ -1,3 +1,5 @@
+import {CancelRun} from './CancelRun';
+import {ProviderSelect} from './ProviderSettings';
 import {NodeName} from './GenerationControls';
 import {TemplateBar} from './NodeTemplates';
 import React,{useEffect} from 'react';
@@ -41,7 +43,7 @@ export function ImageNode({id,data,selected,ctx,Media,Usage}:any){
     <div className="card-media" onDoubleClick={()=>output&&ctx.preview(output)}>{output?<><Media asset={output}/><button className="expand nodrag" title="放大查看" onClick={()=>ctx.preview(output)}><Maximize2 size={17}/></button></>:<div className="generation-placeholder"><strong>{definition?.name}</strong><span>{active?'圖片生成中…':'選取節點，設定輸入後生成'}</span></div>}</div>
     {selected&&<div className="node-composer audio-composer nodrag nowheel" onDoubleClick={e=>e.stopPropagation()}>
       <TemplateBar category={'image'} spec={spec} onApply={(next:any)=>next.workflow!==spec.workflow?ctx.resetImage(id,next):ctx.editImage(id,next)}/>
-      <div className="composer-fields"><label>功能<select aria-label="圖片生成功能" value={spec.workflow} onChange={e=>ctx.resetImage(id,imageDefaults(catalog.find((d:any)=>d.id===e.target.value),spec.provider))}>{catalog.map((d:any)=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label><label>運算服務<select value={spec.provider} onChange={e=>update({provider:e.target.value})}><option value="runninghub">RunningHub</option><option value="comfyui">本機 ComfyUI</option></select></label></div>
+      <div className="composer-fields"><label>功能<select aria-label="圖片生成功能" value={spec.workflow} onChange={e=>ctx.resetImage(id,{...imageDefaults(catalog.find((d:any)=>d.id===e.target.value),spec.provider),provider_profile_id:spec.provider_profile_id})}>{catalog.map((d:any)=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label><label>運算服務<ProviderSelect config={ctx.config} spec={spec} onChange={update}/></label></div>
       {definition?.fields.filter((f:any)=>!f.advanced).map(field)}
       {definition?.supports_lora&&<details onToggle={()=>updateInternals(id)}><summary>高級功能 · LoRA 與採樣</summary>
         <p className="help">LoRA 依清單順序載入；空白或未啟用會跳過。寬高使用 16 的倍數。</p>
@@ -49,11 +51,11 @@ export function ImageNode({id,data,selected,ctx,Media,Usage}:any){
         <button onClick={()=>update({loras:[...(spec.loras||[]),{name:'',strength:1,enabled:true}]})}>＋ 新增 LoRA</button>
         <div className="advanced-grid">{definition.fields.filter((f:any)=>f.advanced).map(field)}</div>
       </details>}
-      <div className="composer-submit"><button onClick={()=>ctx.duplicate(id)}>複製</button><button onClick={()=>ctx.remove(id)}>移除節點</button><button disabled={active} className="primary" onClick={()=>ctx.generate(id)}>{active?'生成中…':'生成圖片'}</button></div>
+      <div className="composer-submit"><CancelRun id={id} ctx={ctx}/><button onClick={()=>ctx.duplicate(id)}>複製</button><button onClick={()=>ctx.remove(id)}>移除節點</button><button disabled={active} className="primary" onClick={()=>ctx.generate(id)}>{active?'生成中…':'生成圖片'}</button></div>
       {runs[0]&&<><p>{runs[0].stage}{runs[0].progress!=null?' · '+runs[0].progress+'%':''}</p><Usage run={runs[0]}/>{runs[0].error&&<p className="error-message">{runs[0].error}</p>}</>}
       {!!runs.length&&<details><summary>生成歷史（{runs.length}）</summary>{runs.map((r:any)=><div className="audio-history" key={r.id}><p>{new Date(r.created_at*1000).toLocaleString()} · {r.stage}</p>{r.outputs.map((a:any)=><div key={a.id}><img className="image-input-preview" src={a.url} alt={a.name} onClick={()=>ctx.preview(a)}/><button onClick={()=>ctx.audioOutput(id,a.id)}>顯示此版本</button><a href={a.url} download={a.name}>下載</a></div>)}<button onClick={()=>ctx.resetImage(id,r.spec)}>套用此版參數</button></div>)}</details>}
     </div>}
-    {selected&&<footer className="nodrag"><button title="複製節點與連線" onClick={()=>ctx.duplicate(id)}><Copy size={14}/></button><button title="移除節點" onClick={()=>ctx.remove(id)}><Trash2 size={14}/></button><span/><small>圖片生成</small></footer>}
+    {<footer className={"nodrag "+(!selected?"node-details-hidden":"")}><button title="複製節點與連線" onClick={()=>ctx.duplicate(id)}><Copy size={14}/></button><button title="移除節點" onClick={()=>ctx.remove(id)}><Trash2 size={14}/></button><span/><small>圖片生成</small></footer>}
     <Handle type="source" position={Position.Right} isConnectable={!!output} aria-label="圖片輸出"/>
   </article>;
 }

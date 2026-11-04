@@ -7,6 +7,7 @@ from .workflow import ROOT, Reference
 REGISTRY = json.loads((ROOT/'workflows/audio_registry.json').read_text(encoding='utf-8'))
 
 class AudioGeneration(BaseModel):
+    provider_profile_id: str | None = None
     kind: Literal['audio'] = 'audio'
     provider: Literal['comfyui','runninghub'] = 'comfyui'
     workflow: str

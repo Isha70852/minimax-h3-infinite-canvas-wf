@@ -147,3 +147,31 @@ Open Media Archive above the right-hand project generation history. It defaults 
 - Results, assets and project lists render in batches with Load more. Generation status continues to update.
 - Humans and automation can browse/play concurrently, but avoid simultaneous edits to the same project. Automation PUT checks If-Match; browser saves still replace the canvas without full collaborative merging.
 - ChatGPT subscription image generation is not integrated: official Sign in with ChatGPT plan-usage preview explicitly excludes image generation. Codex built-in image generation does not establish a supported direct subscription API for this app: https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations .
+
+### Colab video provider (20261102)
+
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Isha70852/minimax-h3-infinite-canvas-wf/blob/main/colab/MiniMax_H3_MotionContext_Remote_20261102.ipynb)
+
+Both files are required; the visual ComfyUI workflow and API graph are different formats, not alternatives. Download them from `example_workflows/` (open each file on GitHub and choose Download raw file):
+
+- [MiniMax_H3_一採保留_二採Latent放大_無限畫布.json](example_workflows/MiniMax_H3_一採保留_二採Latent放大_無限畫布.json)
+- [MiniMax_H3_一採保留_二採Latent放大_無限畫布_api.json](example_workflows/MiniMax_H3_一採保留_二採Latent放大_無限畫布_api.json)
+
+The badge opens the public GitHub notebook in Colab once this version is published. Keep the notebook and both JSON files in the repository. A separate personal Drive copy is optional; use **File → Save a copy in Drive** to retain personal notebook edits. Each user runs their own runtime; this does not share your active runtime or token.
+
+Use `colab/MiniMax_H3_MotionContext_Remote_20261102.ipynb`: install dependencies/models, start ComfyUI, upload **both JSON files below** in the original-JSON / canvas API cell, then run that cell and Cell 7. Rerun both cells after updating an existing runtime.
+Set **H3_API_URL** and **H3_API_TOKEN** in canvas Settings (not the public ComfyUI UI tunnel URL), save, and select **Colab** on video nodes or video defaults. Tokens stay in the local backend and can be removed. Image, music and TTS generation do not support this provider.
+The canvas uses the existing unified video compiler and submits the complete API graph to `/prompt`, rather than the restricted `/canvas/generate` helper. First pass, second pass, reference media and director Motion Context preserve their existing behavior. Preflight `/object_info` checks installed nodes and model filenames; configure actual Colab filenames. Unexposed VAE/encoder settings still come from `workflows/video_unified.json`; no models are silently substituted or downloaded.
+Uploads use `/upload/image`, `/canvas/upload/video`, `/upload/audio`; polling uses `/history/{prompt_id}` and authenticated downloads use `/view`. This notebook adds `/object_info`, `/upload/audio`, and output-only `/view` under its existing global Bearer authentication. No WebSocket percentage updates or RH coin billing are available; elapsed time is measured by the canvas. If the tunnel/runtime disconnects, check the remote job before resubmitting. New jobs use the new configured URL; existing jobs retain their submission URL. Local mock validation is not a Colab GPU end-to-end test.
+
+Connection visibility persists in this browser. Groups can be resized in both expanded and collapsed states, with independent saved dimensions and unchanged member-relative positions.
+
+Older bridges without `/object_info` use `/health` and endpoint discovery, then let ComfyUI validate the submitted graph. Without `/view`, first/second outputs download through `/canvas/result/{prompt_id}/{first|upscaled}`. Audio references require the updated `/upload/audio` endpoint.
+
+### Named generation connections and cancellation
+Settings → Generation sources supports multiple named ComfyUI, RunningHub and Colab connections. Existing connections remain defaults for older templates. Save a source in a node template or override it on a node. Colab remains video-only. Each RunningHub source has its own key, instance size and collapsible workflow IDs. Identical IDs share one editor; enable separate editing to change individual mappings. Credentials remain local. Shared templates must select a connection available on the recipient's machine. Active sources cannot be removed or have their endpoint/credentials changed.
+
+Active video, image, music, TTS and director segments expose Stop/Cancel. Submission-in-progress waits for its remote ID before cancellation. Completion can win the race. Use a recent ComfyUI with targeted prompt_id interruption; RunningHub uses its official cancellation API and incurred usage may remain billable. Colab needs the updated original-JSON / canvas API cell plus Cell 7 for `/canvas/cancel/{prompt_id}`. Unsupported bridges show a cancellation error and keep tracking the task.
+
+### Manual sigma schedules
+Video advanced settings offer BasicScheduler (unchanged default) or ManualSigmas. ManualSigmas #358 replaces the first-pass sigma input of SamplerCustomAdvanced #125. First-pass Steps/Scheduler do not apply in manual mode; the default seven values define six intervals: `1.0, 0.972973, 0.923077, 0.8, 0.571429, 0.333333, 0.0`. Templates and director segments retain this choice; second-pass refinement planning is unchanged. The server must provide ManualSigmas (recent ComfyUI or the appropriate KJNodes version). Shared JSONs include an optional disconnected ManualSigmas node; BasicScheduler stays wired by default. Canvas compiles the selected connection automatically. Update the uploaded RunningHub workflow from example_workflows; update the source ID if creating a new workflow. Reimport both JSONs in Colab.

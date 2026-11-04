@@ -41,7 +41,7 @@ def all_records(kind):
         return [json.loads(row[0]) for row in db.execute('SELECT body FROM records WHERE kind=? ORDER BY updated DESC', (kind,))]
 
 
-DEFAULT_SETTINGS = {'comfy_url': 'http://127.0.0.1:8188', 'runninghub_url': 'https://www.runninghub.cn',
+DEFAULT_SETTINGS = {'colab_url':'', 'colab_token':'', 'comfy_url': 'http://127.0.0.1:8188', 'runninghub_url': 'https://www.runninghub.cn',
                     'runninghub_key': '', 'workflow_id': '', 'motion_workflow_id': '', 'instance_type': 'default'}
 
 

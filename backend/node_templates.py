@@ -40,7 +40,7 @@ def clean(category, spec):
             if isinstance(v,bool) or not isinstance(v,(int,float)) or not math.isfinite(v) or not f.get('min',-math.inf)<=v<=f.get('max',math.inf): raise ValueError('模板數值超出範圍：'+f['key'])
             if f['type']=='integer' and v!=int(v): raise ValueError('需要整數：'+f['key'])
             if f['key'] in ('width','height') and v%16: raise ValueError('圖片寬高需為 16 的倍數。')
-    result = {'kind':'image' if category=='image' else 'audio', 'workflow':spec['workflow'], 'provider':spec.get('provider','comfyui'), 'values':values}
+    result = {'kind':'image' if category=='image' else 'audio', 'workflow':spec['workflow'], 'provider':spec.get('provider','comfyui'), 'provider_profile_id':spec.get('provider_profile_id'), 'values':values}
     if category == 'image':
         result['loras'] = spec.get('loras',[])
         if result['loras'] and 'lora' not in entry: raise ValueError('此工作流不支援 LoRA。')
@@ -85,7 +85,8 @@ def resolve(category, spec, template_id=None, tag=None, use_default=True):
     elif use_default:
         selected = next((t for t in candidates if t['is_default']),None)
     if not selected: return spec
-    preset = selected['spec']
+    preset = {**selected['spec'],'provider_profile_id':selected['spec'].get('provider_profile_id')}
+    if spec.get('provider') and spec['provider']!=preset.get('provider') and 'provider_profile_id' not in spec: spec={**spec,'provider_profile_id':None}
     if spec.get('workflow') and preset.get('workflow') and spec['workflow']!=preset['workflow']:
         if template_id or tag: raise ValueError('模板與指定工作流不相容。')
         return spec

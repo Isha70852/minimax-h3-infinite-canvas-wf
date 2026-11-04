@@ -21,6 +21,7 @@ from PIL import Image
 from pydantic import BaseModel, Field
 
 from . import storage as db
+from . import provider_profiles
 from . import node_templates, connection_errors, directors
 from . import library
 from . import recycle
@@ -76,10 +77,11 @@ async def execute(id):
     engine = None
     watcher = None
     try:
-        settings = {**db.settings(), **run.get('connection', {})}
+        settings = {**provider_profiles.resolve(db.settings(),run['spec']), **run.get('connection', {})}
         engine = provider(run['spec']['provider'], settings)
         spec = parse_spec(run['spec'])
         if not run.get('remote_id'):
+            if await finish_cancel(id,engine): return
             assets = assets_for(spec)
             compiled = compile_spec(spec, assets, seed=int(run['seed']))
             await engine.preflight(compiled['workflow'])
@@ -87,6 +89,7 @@ async def execute(id):
             for index, asset in enumerate(assets.values()):
                 update_run(id, stage=f'上傳素材 {index + 1}/{len(assets)}')
                 filenames[asset['id']] = await engine.upload(asset)
+            if await finish_cancel(id,engine): return
             compiled = compile_spec(spec, assets, filenames, seed=int(run['seed']))
             update_run(id, compiled=compiled, status='submitting', stage='提交生成任務')
             task_id = await engine.submit(compiled['workflow'], id, int(run['seed']))
@@ -95,6 +98,7 @@ async def execute(id):
             watcher = asyncio.create_task(engine.watch(id, run['remote_id'], lambda **kw: update_run(id, **kw)))
         errors = 0
         while True:
+            if await finish_cancel(id,engine): return
             try:
                 result = await engine.query(run['remote_id'])
                 errors = 0
@@ -117,7 +121,7 @@ async def execute(id):
                     filename = uuid.uuid4().hex + ext
                     path = db.MEDIA / filename
                     try:
-                        async with httpx.AsyncClient(timeout=180, follow_redirects=True) as client:
+                        async with httpx.AsyncClient(timeout=180, follow_redirects=spec.provider!='colab', headers=getattr(engine,'download_headers',{})) as client:
                             async with client.stream('GET', output['url']) as response:
                                 response.raise_for_status()
                                 with path.open('wb') as file:
@@ -151,7 +155,12 @@ async def execute(id):
         raise
     except Exception as error:
         message = str(error)
+        for profile in provider_profiles.profiles(db.settings()):
+            for field in provider_profiles.SECRETS:
+                if profile.get(field): message=message.replace(profile[field],'[redacted]')
         key = db.settings().get('runninghub_key', '')
+        colab_secret=db.settings().get('colab_token','')
+        if colab_secret: message=message.replace(colab_secret,'[redacted]')
         if key:
             message = message.replace(key, '[redacted]')
         state = require('runs', id)
@@ -224,7 +233,7 @@ async def invalid(request, error):
 def config():
     values = db.settings()
     profiles = values.get('models') or [{'name': name, 'shift_enabled': False, 'shift_video': 6, 'shift_audio': 3} for name in MODELS]
-    return {'node_templates': node_templates.templates(), 'models': [m['name'] for m in profiles], 'model_profiles': profiles, 'image_workflows': image_workflows.catalog(), 'audio_workflows': catalog(), 'video_two_pass_parameters': VIDEO_REGISTRY['two_pass_parameters'], 'video_defaults': values.get('video_defaults', {}), 'loras': values.get('loras') or LORAS, 'aspects': ASPECTS}
+    return {'provider_profiles': provider_profiles.public(values,catalog=True), 'node_templates': node_templates.templates(), 'models': [m['name'] for m in profiles], 'model_profiles': profiles, 'image_workflows': image_workflows.catalog(), 'audio_workflows': catalog(), 'video_two_pass_parameters': VIDEO_REGISTRY['two_pass_parameters'], 'video_defaults': values.get('video_defaults', {}), 'loras': values.get('loras') or LORAS, 'aspects': ASPECTS}
 
 
 @app.get('/api/capabilities')
@@ -235,7 +244,7 @@ def capabilities():
 @app.get('/api/settings')
 def settings():
     settings = db.settings()
-    return {**{k: v for k, v in settings.items() if k != 'runninghub_key'}, 'has_key': bool(settings['runninghub_key'])}
+    return {**{k: v for k, v in settings.items() if k not in ('runninghub_key','colab_token','provider_profiles')}, 'provider_profiles':provider_profiles.public(settings), 'has_colab_token':bool(settings.get('colab_token')), 'has_key': bool(settings['runninghub_key'])}
 
 
 class ModelEntry(BaseModel):
@@ -246,6 +255,10 @@ class ModelEntry(BaseModel):
 
 
 class Settings(BaseModel):
+    provider_profiles: list[dict] | None = None
+    colab_url: str = ''
+    colab_token: str | None = None
+    clear_colab_token: bool = False
     comfy_url: str = 'http://127.0.0.1:8188'
     runninghub_url: str = 'https://www.runninghub.cn'
     runninghub_key: str | None = None
@@ -269,7 +282,7 @@ def save_settings(body: Settings):
         raise ValueError('LoRA 檔名不可空白或超過 500 字。')
     if body.models and any(not m.name.strip() for m in body.models):
         raise ValueError('模型檔名不可空白。')
-    for url in (body.comfy_url, body.runninghub_url):
+    for url in (body.comfy_url, body.runninghub_url, *([body.colab_url] if body.colab_url else [])):
         parsed = urlparse(url)
         if parsed.scheme not in ('http', 'https') or not parsed.hostname or parsed.username or parsed.password:
             raise ValueError('服務網址必須是有效的 HTTP/HTTPS 網址。')
@@ -277,7 +290,7 @@ def save_settings(body: Settings):
         raise ValueError('RunningHub 僅支援官方 cn / ai API 網址。')
     if body.instance_type not in ('default', 'plus', 'ultra'):
         raise ValueError('不支援的 RunningHub 機型。')
-    data = body.model_dump(exclude_none=True, exclude={'clear_runninghub_key'})
+    data = body.model_dump(exclude_none=True, exclude={'clear_runninghub_key','clear_colab_token'})
     if body.image_workflow_ids is not None:
         if set(body.image_workflow_ids) - image_workflows.REGISTRY.keys(): raise ValueError('不支援的圖片工作流。')
         if any(v and not v.isdigit() for v in body.image_workflow_ids.values()): raise ValueError('工作流 ID 必須為數字。')
@@ -287,21 +300,24 @@ def save_settings(body: Settings):
     if body.video_defaults is not None:
         defaults = Generation(**{**body.video_defaults, 'prompt': 'default', 'references': []}).model_dump()
         data['video_defaults'] = {k:v for k,v in defaults.items() if k not in ('prompt','references')}
+    if body.clear_colab_token: data['colab_token']=''
+    elif not body.colab_token: data.pop('colab_token',None)
     if body.clear_runninghub_key:
         data['runninghub_key'] = ''
     if body.models:
         data['models'] = [{**m, 'name': m['name'].strip()} for m in data['models']]
     if body.loras:
         data['loras'] = [n.strip() for n in body.loras]
+    if body.provider_profiles is not None: data.update(provider_profiles.merge(body.provider_profiles,db.settings()))
     db.put('settings', 'default', {**db.settings(), **data})
     return settings()
 
 
 @app.post('/api/connections/check')
-async def check_connection():
+async def check_connection(profile_id: str | None = None):
     async with httpx.AsyncClient(timeout=8, trust_env=False) as client:
         try:
-            response = await client.get(db.settings()['comfy_url'].rstrip('/') + '/object_info')
+            response = await client.get(provider_profiles.resolve(db.settings(),{'provider':'comfyui','provider_profile_id':profile_id})['comfy_url'].rstrip('/') + '/object_info')
             response.raise_for_status()
             info = response.json()
             required = ['MiniMaxH3AudioConditioningT8', 'MiniMaxLowVRAMAttention', 'MiniMaxChunkFeedForward', 'MiniMaxH3SigmaShift', 'ModelAttentionBackend', 'BlockSparseAttention']
@@ -507,7 +523,7 @@ async def start_run(body: RunRequest):
     seed = int(body.spec.noise_seed) if isinstance(body.spec,Generation) and body.spec.seed_mode!='randomize' and body.spec.noise_seed is not None else secrets.randbits(63)
     if isinstance(body.spec,Generation): body.spec=body.spec.model_copy(update={'noise_seed':str(seed)})
     compiled = compile_spec(body.spec, assets, seed=seed)
-    settings = db.settings()
+    settings = provider_profiles.resolve(db.settings(),body.spec.model_dump())
     is_motion = isinstance(body.spec,Generation) and body.spec.motion_context
     settings['native_comfy'] = False
     if isinstance(body.spec,Generation):
@@ -518,6 +534,8 @@ async def start_run(body: RunRequest):
         settings['workflow_id'] = settings.get('image_workflow_ids', {}).get(body.spec.workflow, '')
     if isinstance(body.spec, AudioGeneration):
         settings['workflow_id'] = settings.get('audio_workflow_ids', {}).get(body.spec.workflow, '')
+    if body.spec.provider == 'colab' and (not settings.get('colab_url') or not settings.get('colab_token')):
+        raise ValueError('請先設定 Colab API 網址與 token。')
     if body.spec.provider == 'runninghub' and not settings['runninghub_key']:
         raise ValueError('請先在連線設定填入 RunningHub API Key。')
     if body.spec.provider == 'runninghub' and not settings['native_comfy'] and not settings['workflow_id'].strip():
@@ -525,10 +543,34 @@ async def start_run(body: RunRequest):
     run = db.put('runs', body.request_id, {'project_id': body.project_id, 'node_id': body.node_id,
         'spec': body.spec.model_dump(), 'seed': str(seed), 'compiled': compiled, 'status': 'uploading',
         'stage': '準備生成', 'progress': None, 'outputs': [], 'created_at': time.time(),
-        'connection': {**{k: settings[k] for k in ('comfy_url', 'runninghub_url', 'workflow_id', 'instance_type','native_comfy')}, 'output_nodes': compiled.get('output_nodes', [])}})
+        'connection': {**{k: settings[k] for k in ('comfy_url', 'colab_url', 'runninghub_url', 'workflow_id', 'instance_type','native_comfy')}, 'output_nodes': compiled.get('output_nodes', [])}})
     launch(run['id'])
     return public_run(run)
 
+
+
+async def finish_cancel(id, engine):
+    current=require('runs',id)
+    if not current.get('cancel_requested'): return False
+    try:
+        if current.get('remote_id'): await engine.cancel(current['remote_id'])
+    except Exception as error:
+        message=str(error)
+        for p in provider_profiles.profiles(db.settings()):
+            for key in provider_profiles.SECRETS:
+                if p.get(key): message=message.replace(p[key],'[redacted]')
+        update_run(id,cancel_requested=False,cancel_error=message[:1000])
+        return False
+    update_run(id,status='cancelled',stage='已取消',progress=None,finished_at=time.time(),cancel_requested=False)
+    return True
+
+@app.post('/api/runs/{id}/cancel')
+async def cancel_run(id: str):
+    run=require('runs',id)
+    if run['status'] not in ACTIVE: return public_run(run)
+    update_run(id,cancel_requested=True,cancel_error=None)
+    launch(id)
+    return public_run(require('runs',id))
 
 @app.get('/api/runs/{id}/latent/{filename}')
 def download_latent(id:str, filename:str):
@@ -543,7 +585,7 @@ async def refresh_usage(id: str):
     run = require('runs', id)
     if run['spec']['provider'] != 'runninghub' or not run.get('remote_id'):
         raise ValueError('此任務沒有 RunningHub 用量可查詢。')
-    engine = provider('runninghub', {**db.settings(), **run.get('connection', {})})
+    engine = provider('runninghub', {**provider_profiles.resolve(db.settings(),run['spec']), **run.get('connection', {})})
     try:
         result = await engine.query(run['remote_id'])
         return public_run(update_run(id, usage=result.get('usage'), task_usage_list=result.get('task_usage_list', [])))
@@ -561,7 +603,7 @@ async def resume(id: str):
     run = require('runs', id)
     if not run.get('remote_id'):
         raise ValueError('沒有遠端任務 ID，請到服務端確認。')
-    if run['status'] == 'success':
+    if run['status'] in ('success','cancelled'):
         return public_run(run)
     update_run(id, status='reconnecting', error=None, stage='恢復查詢遠端結果')
     launch(id)

@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "template": "video_unified.json",
   "motion_template": "video_unified.json",
   "nodes": {
@@ -33,7 +33,8 @@
     "plan": "338",
     "upscale": "339",
     "reconcile": "341",
-    "mixer": "342"
+    "mixer": "342",
+    "manual_sigmas": "358"
   },
   "fields": {
     "model": [

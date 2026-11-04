@@ -1580,8 +1580,8 @@ main {
 @media(max-width:800px){.topbar{height:50px;left:8px;top:8px;max-width:calc(100vw - 16px);padding:0 10px;gap:8px}.workspace{height:100dvh}.topbar .project-name{width:140px}.library-overlay{padding:12px}}
 
 .canvas-card.generation:not(.is-selected) { background:transparent; border-color:transparent; box-shadow:none; }
-.canvas-card.generation:not(.is-selected)>.card-media { min-height:160px; }
-.canvas-card.generation:not(.is-selected)>.card-media .expand { display:none; }
+
+
 .node-composer { width:820px; max-width:calc(100vw - 80px); }
 .node-composer textarea { min-height:230px; line-height:1.75; }
 .composer-fields { grid-template-columns:repeat(3,minmax(0,1fr)); }
@@ -1787,3 +1787,37 @@ main {
 .react-flow__node.node-running{border-radius:12px;box-shadow:0 0 0 2px #72baff55,0 0 22px #429cff33;animation:running-glow 2.8s ease-in-out infinite;}
 @keyframes running-glow{50%{box-shadow:0 0 0 2px #72baff88,0 0 28px #429cff55;}}
 @media(prefers-reduced-motion:reduce){.react-flow__node.node-running{animation:none;}}
+
+.canvas-group .react-flow__resize-control{pointer-events:auto;}
+
+/* Keep preview geometry unchanged when selection details are hidden. */
+.node-details-hidden { visibility:hidden; pointer-events:none; }
+.node-details,.node-details-hidden { flex-shrink:0; }
+.card-media .expand { display:flex; z-index:3; top:8px; bottom:auto; }
+.card-media .expand.video-expand { top:48px; }
+.canvas-card .card-media video { object-position:center top; }
+.canvas-group-header { background:var(--group-color,#25303b); }
+.canvas-group-header input[type=color] { width:28px; height:28px; padding:2px; flex-shrink:0; cursor:pointer; }
+
+/* Explicit picture click target; leave the native timeline/volume controls exposed. */
+.media-modal .video-play-surface { position:absolute; inset:0 0 64px; width:100%; padding:0; border:0; border-radius:0; background:transparent; cursor:pointer; }
+.media-modal .video-play-surface:hover { background:transparent; }
+.media-modal .video-play-surface:focus-visible { outline:2px solid #99bce8; outline-offset:-3px; }
+
+/* Collapsed visual nodes end at the media edge, including their hit area. */
+.react-flow__node.preview-only-node { height:auto!important; min-height:0!important; }
+.canvas-card.preview-only { height:auto; min-height:0; }
+
+.provider-add { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
+.provider-card { border:1px solid #414141; border-radius:12px; margin:10px 0; padding:12px 16px; background:#202020; }
+.provider-card>summary { cursor:pointer; padding:4px 0; }
+.provider-card>summary span { float:right; font-size:12px; color:#999; }
+.provider-card[open]>summary { margin-bottom:16px; }
+.provider-card label { margin-top:12px; }
+.provider-workflows { margin:16px 0 8px; padding:12px; background:#181818; border-radius:8px; }
+.provider-workflows summary { cursor:pointer; }
+.provider-workflows .check-row { display:flex; flex-direction:row; align-items:center; gap:8px; }
+.provider-workflows .check-row input { width:16px; flex:0 0 16px; }
+.cancel-run { display:inline-flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.cancel-run button { border:1px solid #775958; color:#efc5c3; white-space:nowrap; }
+.cancel-run small { flex-basis:100%; }

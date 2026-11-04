@@ -761,5 +761,14 @@
     "_meta": {
       "title": "Video Combine 🎥🅥🅗🅢"
     }
+  },
+  "358": {
+    "inputs": {
+      "sigmas": "1.0, 0.972973, 0.923077, 0.8, 0.571429, 0.333333, 0.0"
+    },
+    "class_type": "ManualSigmas",
+    "_meta": {
+      "title": "ManualSigmas · optional first-pass schedule"
+    }
   }
 }

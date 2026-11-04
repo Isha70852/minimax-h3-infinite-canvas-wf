@@ -1,7 +1,9 @@
+import {CancelRun} from './CancelRun';
+import {ProviderSelect} from './ProviderSettings';
 import {NodeName} from './GenerationControls';
 import {TemplateBar} from './NodeTemplates';
 import {AudioPlayer} from './AudioPlayer';
-import {Copy,Trash2,Music2} from 'lucide-react';
+import {Copy,Trash2,Music2,Maximize2} from 'lucide-react';
 import React,{useEffect} from 'react';
 import {Handle,Position,NodeResizer,useUpdateNodeInternals} from '@xyflow/react';
 import {NumberInput,PromptInput} from './GenerationControls';
@@ -18,10 +20,10 @@ export function AudioNode({id,data,selected,ctx,Media,Usage}:any) {
     <NodeResizer isVisible={selected} minWidth={320} minHeight={136} maxHeight={136}/>
     {!selected&&definition?.fields.filter((f:any)=>['text','audio'].includes(f.type)).map((f:any,i:number)=><Handle key={f.key} type="target" id={f.key} position={Position.Left} style={{top:45+i*18}} title={f.label+' 輸入'} aria-label={f.label+' 輸入'}/>)}
     <header><Music2 size={15}/><NodeName value={data.label} onChange={(name:string)=>ctx.rename(id,name)}/><small>{data.kind==='music'?'MUSIC':'TTS'}</small></header>
-    <div className="card-media">{output?<Media asset={output} controls/>:<div className="generation-placeholder"><span>{active?'聲音生成中…':definition?.name+' · 選取後設定'}</span></div>}</div>
+    <div className="card-media" onDoubleClick={e=>{e.stopPropagation();if(output)ctx.preview(output);}}>{output?<Media asset={output} controls/>:<div className="generation-placeholder"><span>{active?'聲音生成中…':definition?.name+' · 選取後設定'}</span></div>}{output&&<button className="expand nodrag" title="放大查看" onClick={()=>ctx.preview(output)}><Maximize2 size={15}/></button>}</div>
     {selected&&<div className="node-composer audio-composer nodrag nowheel" onDoubleClick={e=>e.stopPropagation()}>
       <TemplateBar category={data.kind} spec={spec} onApply={(next:any)=>next.workflow!==spec.workflow?ctx.resetAudio(id,next):ctx.editAudio(id,next)}/>
-      <div className="composer-fields"><label>功能<select aria-label="音訊生成功能" value={spec.workflow} onChange={e=>{const d=catalog.find((d:any)=>d.id===e.target.value);ctx.resetAudio(id,{kind:'audio',provider:spec.provider,workflow:d.id,values:Object.fromEntries(d.fields.filter((f:any)=>f.type!=='audio').map((f:any)=>[f.key,f.default??''])),audio_asset_id:null});}}>{catalog.filter((d:any)=>d.category===data.kind).map((d:any)=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label><label>運算服務<select value={spec.provider} onChange={e=>update({provider:e.target.value})}><option value="runninghub">RunningHub</option><option value="comfyui">本機 ComfyUI</option></select></label></div>
+      <div className="composer-fields"><label>功能<select aria-label="音訊生成功能" value={spec.workflow} onChange={e=>{const d=catalog.find((d:any)=>d.id===e.target.value);ctx.resetAudio(id,{kind:'audio',provider:spec.provider,provider_profile_id:spec.provider_profile_id,workflow:d.id,values:Object.fromEntries(d.fields.filter((f:any)=>f.type!=='audio').map((f:any)=>[f.key,f.default??''])),audio_asset_id:null});}}>{catalog.filter((d:any)=>d.category===data.kind).map((d:any)=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label><label>運算服務<ProviderSelect config={ctx.config} spec={spec} onChange={update}/></label></div>
       {definition?.fields.map((field:any)=>{
         const edge=ctx.edges.find((e:any)=>e.target===id&&e.targetHandle===field.key);
         const source=ctx.nodes.find((n:any)=>n.id===edge?.source);
@@ -36,7 +38,7 @@ export function AudioNode({id,data,selected,ctx,Media,Usage}:any) {
         </div>;
       })}
       <p className="help">只覆寫上方輸入，其餘參數保持工作流原值。</p>
-      <div className="composer-submit"><button onClick={()=>ctx.duplicate(id)}>複製節點</button><button onClick={()=>ctx.remove(id)}>移除節點</button><button className="primary" disabled={active} onClick={()=>ctx.generate(id)}>{active?'生成中…':'生成聲音'}</button></div>
+      <div className="composer-submit"><CancelRun id={id} ctx={ctx}/><button onClick={()=>ctx.duplicate(id)}>複製節點</button><button onClick={()=>ctx.remove(id)}>移除節點</button><button className="primary" disabled={active} onClick={()=>ctx.generate(id)}>{active?'生成中…':'生成聲音'}</button></div>
       {runs[0]&&<><p>{runs[0].stage}{runs[0].progress!=null?' · '+runs[0].progress+'%':''}</p><Usage run={runs[0]}/>{runs[0].error&&<p className="error-message">{runs[0].error}</p>}</>}
       {!!runs.length&&<details><summary>生成歷史（{runs.length}）</summary>{runs.map((r:any)=><div className="audio-history" key={r.id}><p>{new Date(r.created_at*1000).toLocaleString()} · {r.stage}</p>{r.outputs.map((a:any)=><div key={a.id}><AudioPlayer src={a.url}/><a href={a.url} download={a.name}>下載</a><button onClick={()=>ctx.audioOutput(id,a.id)}>顯示此版本</button></div>)}<button onClick={()=>ctx.resetAudio(id,r.spec)}>套用此版參數</button>{r.error&&<p className="error-message">{r.error}</p>}</div>)}</details>}
     </div>}

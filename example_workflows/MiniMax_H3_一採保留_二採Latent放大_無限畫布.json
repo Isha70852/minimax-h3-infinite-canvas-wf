@@ -1,7 +1,7 @@
 {
   "id": "e3f2b845-8f2c-4b5a-9caf-eac1029d3e7e",
   "revision": 0,
-  "last_node_id": 357,
+  "last_node_id": 358,
   "last_link_id": 690,
   "nodes": [
     {
@@ -4277,6 +4277,45 @@
           "params": {}
         }
       }
+    },
+    {
+      "id": 358,
+      "type": "ManualSigmas",
+      "pos": [
+        386.2748369698168,
+        5411.896869174079
+      ],
+      "size": [
+        470,
+        80
+      ],
+      "flags": {},
+      "order": 49,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "sigmas",
+          "type": "STRING",
+          "widget": {
+            "name": "sigmas"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ManualSigmas"
+      },
+      "widgets_values": [
+        "1.0, 0.972973, 0.923077, 0.8, 0.571429, 0.333333, 0.0"
+      ],
+      "title": "ManualSigmas · connect to 125 sigmas to use"
     }
   ],
   "links": [

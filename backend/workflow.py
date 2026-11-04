@@ -1,4 +1,5 @@
 """Compile the supplied API graph; never mutate the template or user prompt."""
+import math
 import copy
 import json
 import re
@@ -26,6 +27,7 @@ class VideoLoRA(BaseModel):
 
 
 class Generation(BaseModel):
+    provider_profile_id: str | None = None
     seed_mode: Literal['fixed', 'randomize'] | None = None
     audio_mode: Literal['native','reference_only','lock_source','remix_source'] = 'native'
     drive_audio_asset_id: str | None = None
@@ -47,7 +49,7 @@ class Generation(BaseModel):
     context_run_id: str | None = None
     context_video_asset_id: str | None = None
     prompt_source: str | None = None
-    provider: Literal['comfyui', 'runninghub'] = 'comfyui'
+    provider: Literal['comfyui', 'runninghub', 'colab'] = 'comfyui'
     prompt: str = Field(min_length=1, max_length=100000)
     mode: Literal['T2VA', 'I2VA', 'L2VA', 'FL2VA', 'Ref2VA'] = 'T2VA'
     model: str = Field(default=MODELS[0], min_length=1, max_length=500)
@@ -59,6 +61,22 @@ class Generation(BaseModel):
     shift_video: float = Field(default=6, ge=0, le=100)
     shift_audio: float = Field(default=3, ge=0, le=100)
     low_vram_enabled: bool = False
+    sigma_mode: Literal['scheduler','manual'] = 'scheduler'
+    manual_sigmas: str = Field(default='1.0, 0.972973, 0.923077, 0.8, 0.571429, 0.333333, 0.0', max_length=10000)
+
+    @field_validator('manual_sigmas')
+    @classmethod
+    def validate_manual_sigmas(cls, value):
+        parts=[x.strip() for x in value.split(',')]
+        if any(not re.fullmatch(r'[+]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)',x) for x in parts): raise ValueError('Sigma 請填一般非負小數，不使用科學記號。')
+        try: values=[float(x) for x in parts]
+        except ValueError: raise ValueError('Sigma 請使用逗號分隔的數字。')
+        if not 2<=len(values)<=201 or any(not math.isfinite(v) or v<0 for v in values): raise ValueError('Sigma 需有 2–201 個有限非負數字。')
+        if values[0]<=0 or values[-1]!=0 or any(a<b for a,b in zip(values,values[1:])): raise ValueError('Sigma 需由正值遞減至 0。')
+        # ManualSigmas implementations parse decimal strings, not scientific notation.
+        from decimal import Decimal
+        return ', '.join(format(Decimal(x),'f') for x in parts)
+
     steps: int = Field(default=8, ge=1, le=200)
     sampler: str = Field(default='euler', min_length=1, max_length=100, pattern=r'^[a-zA-Z0-9_. -]+$')
     scheduler: str = Field(default='beta', min_length=1, max_length=100, pattern=r'^[a-zA-Z0-9_. -]+$')
@@ -239,6 +257,10 @@ def compile_workflow(spec: Generation, assets: dict, filenames: dict | None = No
         outputs=([N['output']] if spec.save_first_pass else [])+[N['output2']]
     for role, label in (('output','first'),('output2','second')):
         graph[N[role]]['inputs'].update(frame_rate=24,filename_prefix=f'H3Canvas/{seed}_{label}')
+    graph[N['sample']]['inputs']['sigmas']=[N['scheduler'],0]
+    if spec.sigma_mode=='manual':
+        graph[N['manual_sigmas']]={'class_type':'ManualSigmas','inputs':{'sigmas':spec.manual_sigmas}}
+        graph[N['sample']]['inputs']['sigmas']=[N['manual_sigmas'],0]
     for output in outputs: visit(output)
     return {'workflow': {k: v for k, v in graph.items() if k in active}, 'prompt': prompt,
             'mapping': [{k: r[k] for k in ('id', 'name', 'kind', 'role', 'alias', 'tag')} for r in refs],

@@ -147,3 +147,34 @@ AI 操縱端請重新讀取 `/catalog`，依 Generation schema 設定 `seed_mode
 - 生成結果、素材與專案列表分批顯示，可按「載入更多」；畫布運行狀態仍持續更新。
 - AI 與人可同時查看、播放，但不建議同時編輯同一專案。Automation PUT 有 If-Match 檢查，網頁存檔仍是整份畫布更新，沒有完整多人協作合併。
 - ChatGPT OAuth 訂閱生圖尚未提供：官方 Sign in with ChatGPT plan usage 預覽限制明列 image generation 不支援，不能將 Codex 內建生圖視為此應用可直接呼叫的訂閱 API。參見 https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations 。
+
+### Colab 影片提供者（20261102）
+
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Isha70852/minimax-h3-infinite-canvas-wf/blob/main/colab/MiniMax_H3_MotionContext_Remote_20261102.ipynb)
+
+兩份檔案分別是 ComfyUI 視覺工作流與 API graph，不是二選一。請從 `example_workflows/` 下載，GitHub 開啟檔案後按 Download raw file：
+
+- [MiniMax_H3_一採保留_二採Latent放大_無限畫布.json](example_workflows/MiniMax_H3_一採保留_二採Latent放大_無限畫布.json)
+- [MiniMax_H3_一採保留_二採Latent放大_無限畫布_api.json](example_workflows/MiniMax_H3_一採保留_二採Latent放大_無限畫布_api.json)
+
+此版本發布後，上方按鈕即可從公開 GitHub 直接開啟 Colab。倉庫中須保留 notebook 與兩份 JSON；不必另外保留私人 Google Drive 副本。若想保留個人修改，可選「檔案 → 在雲端硬碟中儲存副本」。每位使用者使用自己的執行階段，不會共用你的執行階段或 token。
+
+1. 使用 `colab/MiniMax_H3_MotionContext_Remote_20261102.ipynb`，完成安裝、啟動 ComfyUI，於「匯入原版 JSON 並建立無限畫布 API」格上傳下列**兩份 JSON（缺一不可）**。執行該格及 Cell 7；若沿用已執行的 runtime，更新 notebook 後也要重跑這兩格。
+2. 畫布設定填入 Cell 7 的 **H3_API_URL** 與 **H3_API_TOKEN**，儲存。不是「公開 ComfyUI 網頁」的 tunnel URL。Token 僅留在本機後端，可在設定移除。
+3. 影片節點或影片預設參數選擇「Colab · 影片」。沿用現有影片工作流、所有參數與素材接線；由畫布編譯完整圖後呼叫 `/prompt`，不是限制一張圖／一段影片的 `/canvas/generate`。一採、二採和導演台 Motion Context 均走相同流程。圖片、音樂與 TTS 提供者不變。
+4. 提交前透過 `/object_info` 檢查節點與模型檔名；在影片模型、LoRA 設定填入 Colab 實際安裝名稱。未曝露的 VAE、encoder 仍依 `workflows/video_unified.json`，需要時依進階修改說明調整。不自動替換模型或下載缺少的模型。
+5. 圖片／影片／聲音分別上傳 `/upload/image`、`/canvas/upload/video`、`/upload/audio`；輪詢 `/history/{prompt_id}`，透過帶認證的 `/view` 保存輸出。Notebook 新增的 `/object_info`、`/upload/audio`、`/view` 繼承全域 Bearer 認證。沒有 WebSocket 百分比推播，也沒有 RH 幣欄位；顯示狀態與畫布實測耗時。
+6. Colab runtime／tunnel 中斷時原工作可能仍在執行，先確認遠端狀態，不要直接重送。新任務使用設定中的新 URL；既有任務保留提交時 URL。此整合已做本機模擬檢查，未代表已驗證 Colab GPU 實跑。
+
+連接線顯示開關會記住此瀏覽器上次狀態。群組展開和收合都可拖曳邊框控制點調整尺寸，兩種尺寸分開儲存；收合尺寸不覆蓋展開尺寸，子節點相對位置不變。
+
+舊版橋接若沒有 `/object_info`，改用 `/health` 與端點清單確認，再由 ComfyUI 驗證提交的工作流。沒有 `/view` 時，一採／二採改從 `/canvas/result/{prompt_id}/{first|upscaled}` 下載。聲音參考仍需要更新後的 `/upload/audio` 端點。
+
+### 多組生成來源與取消
+設定中的「生成服務來源」可新增及命名 ComfyUI、RunningHub、Colab 連線。原本三組連線保留為預設，舊模板不需修改。節點模板可儲存指定來源；節點也可手動改選。Colab 目前僅支援影片。每組 RunningHub 有自己的金鑰、規格與可收合的工作流 ID；相同 ID 合併顯示，勾選「拆開編輯各功能」可分別修改。來源與金鑰只存本機，分享模板的來源 ID 必須改選收件者自己的來源。執行中來源不可刪除或更換連線／金鑰。
+
+生成中的影片、圖片、音樂、TTS 與導演台段落提供「停止／取消」。提交中的取消會等取得遠端任務 ID 後送出，避免遺失遠端任務；正在完成的結果可能先回傳。ComfyUI 使用指定任務的 queue delete / interrupt，請使用支援 prompt_id 的新版 ComfyUI；RunningHub 使用官方取消 API，不保證退還已產生的用量。Colab 需更新原版 JSON／畫布 API 儲存格並重跑 Cell 7，才能提供 `/canvas/cancel/{prompt_id}`；舊橋接不支援時顯示失敗原因並繼續追蹤原任務，不假裝已停止。
+
+### 手動 Sigma 採樣
+影片高級設定可選 BasicScheduler（原本預設）或 ManualSigmas。一採的 ManualSigmas #358 直接接 SamplerCustomAdvanced #125 的 sigmas；手動模式的一採 Steps／Scheduler 不生效，預設序列為 `1.0, 0.972973, 0.923077, 0.8, 0.571429, 0.333333, 0.0`（6 個區間）。支援模板及導演台，二採精修規劃器保持原設定。服務端須有 ManualSigmas 節點（新版 ComfyUI 或對應 KJNodes 版本）。
+分享 JSON 已附可選的 ManualSigmas，預設仍接 BasicScheduler；直接在 ComfyUI 網頁使用時可將 #358 接到 #125 的 sigmas。畫布提交時會自動切換並排除未使用節點。RunningHub 建議更新已上傳的工作流為新版 example_workflows 中的 JSON；若新建工作流，記得更新來源的 ID。Colab 請重新匯入對應兩份 JSON。

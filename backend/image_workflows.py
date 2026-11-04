@@ -13,6 +13,7 @@ class LoRA(BaseModel):
     enabled: bool = True
 
 class ImageGeneration(BaseModel):
+    provider_profile_id: str | None = None
     kind: Literal['image'] = 'image'
     provider: Literal['comfyui','runninghub'] = 'comfyui'
     workflow: str
