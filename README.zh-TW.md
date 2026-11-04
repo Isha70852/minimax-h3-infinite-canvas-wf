@@ -178,3 +178,5 @@ AI 操縱端請重新讀取 `/catalog`，依 Generation schema 設定 `seed_mode
 ### 手動 Sigma 採樣
 影片高級設定可選 BasicScheduler（原本預設）或 ManualSigmas。一採的 ManualSigmas #358 直接接 SamplerCustomAdvanced #125 的 sigmas；手動模式的一採 Steps／Scheduler 不生效，預設序列為 `1.0, 0.972973, 0.923077, 0.8, 0.571429, 0.333333, 0.0`（6 個區間）。支援模板及導演台，二採精修規劃器保持原設定。服務端須有 ManualSigmas 節點（新版 ComfyUI 或對應 KJNodes 版本）。
 分享 JSON 已附可選的 ManualSigmas，預設仍接 BasicScheduler；直接在 ComfyUI 網頁使用時可將 #358 接到 #125 的 sigmas。畫布提交時會自動切換並排除未使用節點。RunningHub 建議更新已上傳的工作流為新版 example_workflows 中的 JSON；若新建工作流，記得更新來源的 ID。Colab 請重新匯入對應兩份 JSON。
+
+Colab v0.5.1：移除 Cell 3-b 的模型預設覆寫。Cell 5 後的「⑥ 匯入雙 JSON」格不檢查 UNet／LoRA；其他模型與節點診斷僅警告，實際生成由 ComfyUI 驗證。原本 Cell 6 手動面板保留。取消、聲音上傳及輸出下載端點由 Cell 7 統一註冊；更新匯入格後，請貼上／執行完整新版 Cell 7。取消失敗僅顯示「取消失敗」。

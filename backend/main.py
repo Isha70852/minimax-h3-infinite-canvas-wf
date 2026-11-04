@@ -554,12 +554,8 @@ async def finish_cancel(id, engine):
     if not current.get('cancel_requested'): return False
     try:
         if current.get('remote_id'): await engine.cancel(current['remote_id'])
-    except Exception as error:
-        message=str(error)
-        for p in provider_profiles.profiles(db.settings()):
-            for key in provider_profiles.SECRETS:
-                if p.get(key): message=message.replace(p[key],'[redacted]')
-        update_run(id,cancel_requested=False,cancel_error=message[:1000])
+    except Exception:
+        update_run(id,cancel_requested=False,cancel_error='取消失敗')
         return False
     update_run(id,status='cancelled',stage='已取消',progress=None,finished_at=time.time(),cancel_requested=False)
     return True
