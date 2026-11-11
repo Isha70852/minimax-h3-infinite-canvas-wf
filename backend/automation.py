@@ -4,7 +4,7 @@ import secrets
 from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.openapi.utils import get_openapi
 from pydantic import BaseModel
-from . import storage as db, prompting, node_templates, directors
+from . import storage as db, prompting, node_templates, directors, custom_workflows
 
 class AutomationRun(BaseModel):
     project_id: str
@@ -67,12 +67,16 @@ def install(app, services):
     @router.get('/catalog')
     def catalog():
         return {'version':1,'config':services['config'](),'capabilities':services['capabilities'](),
-                'schemas':{c.__name__:c.model_json_schema() for c in (services['Generation'],services['ImageGeneration'],services['AudioGeneration'],prompting.DraftRequest)},
+                'schemas':{c.__name__:c.model_json_schema() for c in (services['Generation'],services['ImageGeneration'],services['AudioGeneration'],services['CustomGeneration'],services['MotionGeneration'],prompting.DraftRequest)},
                 'node_templates':node_templates.templates(), 'prompt_templates':prompting.public_settings().get('templates',[])}
 
     @router.get('/schema')
     def schema():
         return get_openapi(title='H3 Canvas Automation',version='1',routes=router.routes)
+
+
+    for route in custom_workflows.router.routes:
+        router.add_api_route(route.path.replace('/api/custom-workflows','/custom-workflows',1),route.endpoint,methods=list(route.methods))
 
     # Require optimistic concurrency for full canvas updates to avoid overwriting edits.
     async def update_project(id: str, body: services['Project'], if_match: str | None = Header(default=None)):
@@ -84,11 +88,23 @@ def install(app, services):
     async def submit(body: AutomationRun):
         project=services['get_project'](body.project_id)
         node=next((n for n in project.get('nodes',[]) if n['id']==body.node_id),None)
-        category={'generation':'video','imagegen':'image','music':'music','tts':'tts'}.get((node or {}).get('data',{}).get('kind'))
+        category={'generation':'video','imagegen':'image','music':'music','tts':'tts','custom':'custom','motiongen':'motion'}.get((node or {}).get('data',{}).get('kind'))
         if not category: raise HTTPException(422,'請先建立對應類型的生成節點。')
-        spec=node_templates.resolve(category,body.spec,body.template_id,body.template_tag,body.use_default_template)
+        if category=='custom':
+            candidates=[p for p in custom_workflows.presets() if p['spec']['package_id']==body.spec.get('package_id')]
+            selected=next((p for p in candidates if p['id']==body.template_id),None) if body.template_id else None
+            if body.template_tag:
+                tagged=[p for p in candidates if body.template_tag in p['tags']]
+                if len(tagged)!=1:raise HTTPException(422,'模板標籤不唯一或不存在。')
+                selected=tagged[0]
+            if body.template_id and not selected:raise HTTPException(422,'自訂模板不存在。')
+            if not selected and not body.template_id and not body.template_tag and body.use_default_template:selected=next((p for p in candidates if p['is_default']),None)
+            if selected and body.spec.get('version') and selected['spec']['version']!=body.spec['version']:raise HTTPException(422,'模板版本與工作流版本不同，請明確選擇對應版本。')
+            spec={**(selected['spec'] if selected else {}),**body.spec}
+            spec['values']={**(selected['spec']['values'] if selected else {}),**body.spec.get('values',{})}
+        else:spec=node_templates.resolve(category,body.spec,body.template_id,body.template_tag,body.use_default_template)
         body=services['RunRequest'].model_validate({**body.model_dump(),'spec':spec})
-        expected=('imagegen',) if isinstance(body.spec,services['ImageGeneration']) else ('music','tts') if isinstance(body.spec,services['AudioGeneration']) else ('generation',)
+        expected=('custom',) if isinstance(body.spec,services['CustomGeneration']) else ('motiongen',) if isinstance(body.spec,services['MotionGeneration']) else ('imagegen',) if isinstance(body.spec,services['ImageGeneration']) else ('music','tts') if isinstance(body.spec,services['AudioGeneration']) else ('generation',)
         if not node or node.get('data',{}).get('kind') not in expected: raise HTTPException(422,'請先建立對應類型的生成節點。')
         old=db.get('runs',body.request_id)
         if old and (old['project_id']!=body.project_id or old['node_id']!=body.node_id): raise HTTPException(409,'request_id 已被其他任務使用。')

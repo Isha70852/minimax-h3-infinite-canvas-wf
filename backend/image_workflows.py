@@ -15,7 +15,7 @@ class LoRA(BaseModel):
 class ImageGeneration(BaseModel):
     provider_profile_id: str | None = None
     kind: Literal['image'] = 'image'
-    provider: Literal['comfyui','runninghub'] = 'comfyui'
+    provider: Literal['comfyui','runninghub','colab'] = 'comfyui'
     workflow: str
     values: dict = Field(default_factory=dict)
     image_assets: dict[str,str] = Field(default_factory=dict)

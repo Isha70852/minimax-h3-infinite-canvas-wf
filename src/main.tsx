@@ -1,3 +1,4 @@
+import {CustomWorkflowManager,CustomNode,customDefaults} from './CustomWorkflows';
 import {CancelRun} from './CancelRun';
 import {ProviderSelect,ProviderSettings} from './ProviderSettings';
 import {groupNodes,ungroupNodes,arrangeGroup} from './groups.mjs';
@@ -84,6 +85,7 @@ import { PromptPanel } from "./PromptPanel";
 import {MediaTools} from "./MediaTools";
 import {AudioPlayer} from "./AudioPlayer";
 import {ImageNode,imageDefaults} from "./ImageNode";
+import {MotionNode,motionDefaults} from "./MotionNode";
 import {AssistantSettingsPanel} from "./AssistantSettingsPanel";
 import {DirectorNode} from './DirectorNode';
 import {AudioNode} from "./AudioNode";
@@ -92,14 +94,14 @@ import {AdvancedSettings, NumberInput, PromptInput, ModelSettings, VideoDefaults
 type Asset = {
   id: string;
   name: string;
-  kind: "image" | "video" | "audio";
+  kind: "image" | "video" | "audio" | "model";
   url: string;
   size?: number;
   deleted?: boolean;
   favorite?: boolean;
   use_count?: number;
 };
-type Config = { provider_profiles?:any[]; node_templates?: any[]; models: string[]; loras: string[]; aspects: string[]; model_profiles?: any[]; audio_workflows?: any[]; image_workflows?: any[]; video_defaults?: Partial<Spec> };
+type Config = { custom_workflows?:any[];custom_categories?:any[];custom_models?:any;custom_presets?:any[]; provider_profiles?:any[]; node_templates?: any[]; models: string[]; loras: string[]; aspects: string[]; model_profiles?: any[]; audio_workflows?: any[]; image_workflows?: any[]; motion_workflows?: any[]; video_defaults?: Partial<Spec> };
 type Spec = {
   provider: string;
   provider_profile_id?: string | null;
@@ -141,7 +143,9 @@ type Spec = {
 };
 type CardData = Record<string, unknown> & {
   label: string;
-  kind: "asset" | "generation" | "text" | "music" | "tts" | "imagegen" | "director" | "compare" | "group";
+  kind: "asset" | "generation" | "text" | "music" | "tts" | "imagegen" | "motiongen" | "director" | "compare" | "group" | "custom";
+  custom_spec?: any;
+  motion_spec?: any;
   audio_spec?: any;
   image_spec?: any;
   text?: string;
@@ -210,6 +214,7 @@ async function api(path: string, options: RequestInit = {}) {
   return body;
 }
 const actions = createContext<{
+  setCustomMedia:(id:string,key:string,ids:string[])=>void;customDefinitions:any;editCustom:(id:string,spec:any)=>void;applyCustom:(id:string,preset:any)=>void;previewCustom:(id:string)=>void;saveCustomPreset:(preset:any)=>void;
   cancel:(id:string)=>void;
   groupAction:(id:string,action:string)=>void;
   rename:(id:string,name:string)=>void;
@@ -222,6 +227,8 @@ const actions = createContext<{
   editAudio: (id:string,spec:any)=>void;
   resetAudio: (id:string,spec:any)=>void;
   editImage: (id:string,spec:any)=>void;
+  editMotion: (id:string,spec:any)=>void;
+  resetMotion: (id:string,spec:any)=>void;
   resetImage: (id:string,spec:any)=>void;
   bindAudio: (id:string,field:string,source:string)=>void;
   audioOutput: (id:string,asset:string)=>void;
@@ -240,9 +247,9 @@ const actions = createContext<{
   openAssistant: (id:string)=>void;
   removeReference: (edgeId:string)=>void;
 }>({
-  cancel:()=>{},groupAction:()=>{},rename:()=>{},setRole:()=>{},
+  setCustomMedia:()=>{},customDefinitions:{},editCustom:()=>{},applyCustom:()=>{},previewCustom:()=>{},saveCustomPreset:()=>{},cancel:()=>{},groupAction:()=>{},rename:()=>{},setRole:()=>{},
   setSegments:()=>{},addSegment:()=>{},generateSegment:()=>{},focusNode:()=>{},
-  restoreVideo:()=>{}, nodes: [], editImage:()=>{}, resetImage:()=>{}, editAudio:()=>{}, resetAudio:()=>{}, bindAudio:()=>{}, audioOutput:()=>{},
+  restoreVideo:()=>{}, nodes: [], editImage:()=>{}, resetImage:()=>{}, editMotion:()=>{}, resetMotion:()=>{}, editAudio:()=>{}, resetAudio:()=>{}, bindAudio:()=>{}, audioOutput:()=>{},
   assets: [],
   runs: [],
   duplicate: () => {},
@@ -265,6 +272,7 @@ function HoverVideo({asset, controls, hover, clickToToggle=false}: {asset:Asset;
   </div>;
 }
 function Media({asset,controls=false,hover=false,clickToToggle=false}:{asset:Asset;controls?:boolean;hover?:boolean;clickToToggle?:boolean}) {
+  if(asset.kind==='model')return <a className="model-output nodrag" href={asset.url} download={asset.name}>下載 3D／檔案：{asset.name}</a>;
   return asset.kind==='image'?<img src={asset.url} alt={asset.name} draggable={false} loading="lazy"/>:asset.kind==='video'?<HoverVideo asset={asset} controls={controls} hover={hover} clickToToggle={clickToToggle}/>:controls?<AudioPlayer src={asset.url} label={asset.name}/>:<div className="audio-art"><Music2 size={36}/><div className="wave">{Array.from({length:28},(_,i)=><i key={i} style={{height:12+Math.sin(i*2.3)**2*36}}/>)}</div>{controls&&<audio src={asset.url} controls/>}</div>;
 }
 function VideoReferenceSlots({id,mode,ctx}:any){
@@ -312,8 +320,10 @@ function CanvasCard({ id, data, selected }: NodeProps<CardNode>) {
   const groupWidth=Math.max(420,...children.map(n=>n.position.x+(n.measured?.width||Number(n.style?.width)||320)+24));
   const groupHeight=Math.max(150,...children.map(n=>n.position.y+(n.measured?.height||Number(n.style?.height)||240)+24));
   if(data.kind==="group")return <div className="canvas-group" style={{'--group-color':String(data.group_color||'#25303b')} as React.CSSProperties}><NodeResizer isVisible={selected} minWidth={data.collapsed?420:groupWidth} minHeight={data.collapsed?100:groupHeight} shouldResize={(_,p)=>{if(data.collapsed)return true;const group=ctx.nodes.find(n=>n.id===id);return children.every(n=>{const x=(group?.position.x||0)+n.position.x-p.x,y=(group?.position.y||0)+n.position.y-p.y;return x>=12&&y>=50&&x+(n.measured?.width||Number(n.style?.width)||320)+12<=p.width&&y+(n.measured?.height||Number(n.style?.height)||240)+12<=p.height;});}}/><header className="canvas-group-header"><NodeName value={data.label} onChange={(name:string)=>ctx.rename(id,name)}/><div className="nodrag"><input type="color" aria-label="群組顏色" title="群組標題顏色" value={String(data.group_color||'#25303b')} onChange={e=>ctx.groupAction(id,'color:'+e.target.value)}/><button onClick={()=>ctx.groupAction(id,'toggle')}>{data.collapsed?'展開':'收合'}</button><button disabled={!!data.collapsed} onClick={()=>ctx.groupAction(id,'arrange')}>排列</button><button onClick={()=>ctx.groupAction(id,'ungroup')}>解散</button></div></header>{!!data.collapsed&&<p>{ctx.nodes.filter(n=>n.parentId===id).length} 個節點 · 拖曳標題移動群組</p>}</div>;
+  if(data.kind==="custom")return <CustomNode id={id} data={data} selected={selected} ctx={ctx} Media={Media} Usage={Usage}/>;
   if(data.kind==="compare")return <CompareNode id={id} data={data} selected={selected} ctx={ctx}/>;
   if(data.kind==="director")return <DirectorNode id={id} data={data} selected={selected} ctx={ctx} Usage={Usage}/>;
+  if(data.kind==="motiongen")return <MotionNode id={id} data={data} selected={selected} ctx={ctx} Media={Media} Usage={Usage}/>;
   if(data.kind==="imagegen")return <ImageNode id={id} data={data} selected={selected} ctx={ctx} Media={Media} Usage={Usage}/>;
   if(data.kind==="music"||data.kind==="tts")return <AudioNode id={id} data={data} selected={selected} ctx={ctx} Media={Media} Usage={Usage}/>;
   return (
@@ -430,7 +440,7 @@ function CanvasCard({ id, data, selected }: NodeProps<CardNode>) {
       )}
       {run && <><Usage run={run}/>{data.kind==='generation'&&<button className="nodrag" onClick={()=>ctx.editSpec(id,{noise_seed:run.seed,seed_mode:'fixed'})}>沿用此次 Noise seed</button>}</>}
       {<footer className="nodrag" onClick={(event) => event.stopPropagation()}>
-        <button title="複製節點與連線" onClick={() => ctx.duplicate(id)}>
+        <button title="複製節點與連線" onClick={(e) => {e.stopPropagation();ctx.duplicate(id);}}>
           <Copy size={14} />
         </button>
         <button title="移除節點" onClick={() => ctx.remove(id)}>
@@ -463,6 +473,7 @@ const nodeTypes = { card: CanvasCard };
 function App() {
   const flow = useReactFlow<CardNode>();
   const [templatesOpen,setTemplatesOpen]=useState(false);
+  const [customOpen,setCustomOpen]=useState(false),[customDefinitions,setCustomDefinitions]=useState<any>({});
   const [config, setConfig] = useState<Config | null>(null),
     [project, setProject] = useState<Project | null>(null),
     [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
@@ -708,6 +719,9 @@ function App() {
     setSelected(id);
     return id;
   }
+  const customKeys=nodes.filter(n=>n.data.custom_spec).map(n=>n.data.custom_spec.package_id+':'+n.data.custom_spec.version).sort().join('|');
+  useEffect(()=>{let stopped=false;const keys=[...new Set(customKeys.split('|').filter(Boolean))];Promise.all(keys.map(async key=>{if(customDefinitions[key])return [key,customDefinitions[key]];const [id,version]=key.split(':');return [key,await api('/custom-workflows/'+id+'/versions/'+version)];})).then(entries=>{if(!stopped)setCustomDefinitions((old:any)=>({...old,...Object.fromEntries(entries)}));}).catch(e=>notify(e.message));return ()=>{stopped=true;};},[customKeys]);
+  function addCustom(p:any,override?:any){if(!p&&!override){notify('工作流不存在');return;}const id=uid();const preset=config?.custom_presets?.find((t:any)=>t.spec.package_id===p?.package_id&&t.is_default);const spec=override||preset?.spec||customDefaults(p);dirty();setNodes(old=>[...old,{id,type:'card',position:flow.screenToFlowPosition({x:window.innerWidth/2-160,y:200}),style:{width:360,height:280},data:{kind:'custom',label:p?.name||'自訂生成',custom_spec:{...spec,media_assets:{},text_sources:{}}}}]);setSelected(id);setCustomOpen(false);setCreateMenu(null);}
   function createFromMenu(category:'video'|'image'|'music'|'tts'){
     if(!createMenu||!config)return;
     const source=nodes.find(n=>n.id===createMenu.sourceId),asset=assets.find(a=>a.id===(source?.data.asset_id||source?.data.output_id));
@@ -769,6 +783,7 @@ function App() {
   }
   function presetBase(category:string,spec:any){
     if(category==='video'){const {prompt,...parameters}=defaults(config!);return parameters;}
+    if(category==='motion'){const d=config?.motion_workflows?.find(d=>d.id===spec.workflow);return d?{...motionDefaults(d,spec.provider),provider_profile_id:spec.provider_profile_id}:spec;}
     const catalog=category==='image'?config?.image_workflows:config?.audio_workflows;
     const definition=catalog?.find(d=>d.id===spec.workflow);
     return {kind:category==='image'?'image':'audio',provider:spec.provider,provider_profile_id:spec.provider_profile_id,workflow:spec.workflow,values:Object.fromEntries((definition?.fields||[]).filter((f:any)=>!['text','audio','image'].includes(f.type)).map((f:any)=>[f.key,f.default])),...(category==='image'?{loras:[]}:{})};
@@ -784,6 +799,16 @@ function App() {
     setNodes(old=>[...old,{id,type:'card',position:position||flow.screenToFlowPosition({x:window.innerWidth/2,y:200}),style:{width:360,height:260},data:{kind:'imagegen',label:'圖片生成',image_spec:defaultTemplate(config,'image',imageDefaults(d,(config?.video_defaults?.provider==='runninghub'?'runninghub':'comfyui')))}}]);setSelected(id);
   }
   function resetImage(id:string,spec:any){dirty();setEdges(old=>old.filter(e=>e.target!==id));patch(id,{image_spec:spec});}
+  function addMotion(position?:{x:number;y:number},source?:any){
+    const d=config?.motion_workflows?.[0];if(!d){notify('目前沒有可用的動作遷移工作流');return;}const id=uid();dirty();
+    const spec=defaultTemplate(config,'motion',motionDefaults(d,(config?.video_defaults?.provider==='runninghub'?'runninghub':config?.video_defaults?.provider==='colab'?'colab':'comfyui')));
+    const asset=source&&assets.find(a=>a.id===(source.data.asset_id||source.data.output_id));
+    const field=asset&&d.fields.find((f:any)=>f.type===asset.kind);
+    setNodes(old=>[...old,{id,type:'card',position:position||flow.screenToFlowPosition({x:window.innerWidth/2,y:200}),style:{width:380,height:280},data:{kind:'motiongen',label:'動作遷移',motion_spec:field?{...spec,media_assets:{[field.key]:asset!.id}}:spec}}]);
+    if(field)setEdges(old=>[...old,{...makeEdge(source.id,id,asset!.id),targetHandle:field.key}]);
+    setSelected(id);
+  }
+  function resetMotion(id:string,spec:any){dirty();setEdges(old=>old.filter(e=>e.target!==id));patch(id,{motion_spec:spec});}
   function bindAudio(id:string,field:string,sourceId:string) {
     const source=nodes.find(n=>n.id===sourceId);dirty();
     setEdges(old=>[...old.filter(e=>!(e.target===id&&e.targetHandle===field)),...(source?[{...makeEdge(source.id,id,source.data.asset_id||source.data.output_id||''),targetHandle:field}]:[])]);
@@ -803,10 +828,25 @@ function App() {
     const source = nodes.find((n) => n.id === connection.source),
       target = nodes.find((n) => n.id === connection.target),
       assetId = source?.data.asset_id || source?.data.output_id;
+    if(target?.data.kind==='custom'){
+      const spec=target.data.custom_spec,p=customDefinitions[spec.package_id+':'+spec.version],key=connection.targetHandle;
+      const group=p?.media_groups.find((g:any)=>g.key===key),field=group||p?.fields.find((f:any)=>f.key===key),kind=group?.kind||field?.type;
+      if(!source||!field||source.id===target.id){notify('請連到指定輸入插槽');return;}
+      if(kind==='text'){if(source.data.kind!=='text'){notify('此欄位只接受文字');return;}bindAudio(target.id,key!,source.id);return;}
+      if(assets.find(a=>a.id===assetId)?.kind!==kind){notify('素材類型不符');return;}
+      const existing=edges.filter(e=>e.target===target.id&&e.targetHandle===key);
+      if(group&&existing.length>=group.max_items){notify('素材已達上限');return;}
+      if(existing.some(e=>e.source===source.id))return;
+      dirty();setEdges(old=>[...old.filter(e=>group||!(e.target===target.id&&e.targetHandle===key)),{...makeEdge(source.id,target.id,assetId!),targetHandle:key}]);return;
+    }
     if(target?.data.kind==='compare'){if(!source||source.id===target.id||!['image','video'].includes(assets.find(a=>a.id===assetId)?.kind||'')){notify('比較只接受圖片或影片');return;}bindAudio(target.id,connection.targetHandle==='b'?'b':'a',source.id);return;}
     if(target?.data.kind==='generation'&&connection.targetHandle==='drive_audio'){if(source&&assets.find(a=>a.id===assetId)?.kind==='audio')bindAudio(target.id,'drive_audio',source.id);else notify('Drive audio 只接受聲音');return;}
     if(target?.data.kind==='generation'&&source?.data.kind==='text'&&target.id!==source.id){bindAudio(target.id,'prompt',source.id);return;}
     if(target?.data.kind==='generation'&&connection.targetHandle==='prompt'){notify('提示詞輸入只接受文字節點');return;}
+    if(target?.data.motion_spec&&source&&source.id!==target.id){
+      const d=config?.motion_workflows?.find(d=>d.id===target.data.motion_spec.workflow),f=d?.fields.find((f:any)=>f.key===connection.targetHandle),asset=assets.find(a=>a.id===assetId);
+      if((f?.type==='text'&&source.data.kind==='text')||(['image','video'].includes(f?.type)&&asset?.kind===f.type))bindAudio(target.id,f.key,source.id);else notify('請連接此欄位對應的文字、圖片或影片節點');return;
+    }
     if(target?.data.image_spec&&source&&source.id!==target.id){
       const d=config?.image_workflows?.find(d=>d.id===target.data.image_spec.workflow),f=d?.fields.find((f:any)=>f.key===connection.targetHandle),asset=assets.find(a=>a.id===assetId);
       if((f?.type==='text'&&source.data.kind==='text')||(f?.type==='image'&&asset?.kind==='image'))bindAudio(target.id,f.key,source.id);else notify('請連接此欄位對應的文字或圖片節點');return;
@@ -858,6 +898,17 @@ function App() {
   }
   function payload(id: string) {
     const n = nodes.find((x) => x.id === id)!;
+    if(n.data.custom_spec){
+      const spec={...n.data.custom_spec,values:{...n.data.custom_spec.values},media_assets:{...n.data.custom_spec.media_assets},text_sources:{}};const p=customDefinitions[spec.package_id+':'+spec.version];
+      for(const f of [...(p?.fields||[]),...(p?.media_groups||[])]){const connections=edges.filter(e=>e.target===id&&e.targetHandle===f.key);if(!connections.length)continue;if(f.type==='text')spec.text_sources[f.key]=connections[0].source;else spec.media_assets[f.key]=connections.map(e=>{const source=nodes.find(n=>n.id===e.source);return source?.data.asset_id||source?.data.output_id||e.data?.asset_id;}).filter(Boolean);}
+      return spec;
+    }
+    if(n.data.motion_spec){
+      const spec={...n.data.motion_spec,media_assets:{...n.data.motion_spec.media_assets},text_sources:{} as Record<string,string>};
+      const fields=config?.motion_workflows?.find(d=>d.id===spec.workflow)?.fields||[];
+      for(const edge of edges.filter(e=>e.target===id)){const field=fields.find((f:any)=>f.key===edge.targetHandle);if(['image','video'].includes(field?.type))spec.media_assets[field.key]=edge.data?.asset_id;else if(field?.type==='text')spec.text_sources[field.key]=edge.source;}
+      return spec;
+    }
     if(n.data.image_spec){
       const spec={...n.data.image_spec,image_assets:{...n.data.image_spec.image_assets},text_sources:{} as Record<string,string>};
       const fields=config?.image_workflows?.find(d=>d.id===spec.workflow)?.fields||[];
@@ -938,7 +989,12 @@ function App() {
     }
   }
   function nextImageRole(node:CardNode){const mode=node.data.spec?.mode;if(mode==='I2VA')return 'first';if(mode==='L2VA')return 'last';if(mode==='FL2VA')return edges.some(e=>e.target===node.id&&e.data?.role==='first')?'last':'first';return 'reference';}
+  function customMediaIds(id:string,key:string):string[]{const n=nodes.find(n=>n.id===id),es=edges.filter(e=>e.target===id&&e.targetHandle===key);return es.length?es.map(e=>{const source=nodes.find(n=>n.id===e.source);return source?.data.asset_id||source?.data.output_id||e.data?.asset_id;}).filter(Boolean) as string[]:n?.data.custom_spec?.media_assets?.[key]||[];}
+  function setCustomMedia(id:string,key:string,ids:string[]){const n=nodes.find(n=>n.id===id);if(!n?.data.custom_spec)return;dirty();const connected=edges.filter(e=>e.target===id&&e.targetHandle===key);const replacements=connected.length?ids.map(aid=>{const source=nodes.find(x=>(x.data.asset_id||x.data.output_id)===aid);const asset=assets.find(a=>a.id===aid);const sourceId=source?.id||(asset?addAsset(asset,{x:n.position.x-370,y:n.position.y}):null);return sourceId?{...makeEdge(sourceId,id,aid),targetHandle:key}:null;}).filter(Boolean) as Edge[]:[];setEdges(old=>[...old.filter(e=>!(e.target===id&&e.targetHandle===key)),...replacements]);patch(id,{custom_spec:{...n.data.custom_spec,media_assets:{...n.data.custom_spec.media_assets,[key]:ids}}});}
+  function customSlot(){if(!libraryPanel?.role?.startsWith('custom:'))return null;const n=nodes.find(n=>n.id===libraryPanel.target),spec=n?.data.custom_spec,p=spec&&customDefinitions[spec.package_id+':'+spec.version],key=libraryPanel.role.slice(7);return p?.media_groups.find((g:any)=>g.key===key)||p?.fields.find((f:any)=>f.key===key);}
   function chooseAsset(asset: Asset, targetId?: string, slot?:string) {
+    if(targetId&&slot?.startsWith('custom:')){const key=slot.slice(7),field=customSlot();if(!field||asset.kind!==(field.kind||field.type))return;const ids=customMediaIds(targetId,key);if(ids.includes(asset.id)){setCustomMedia(targetId,key,ids.filter(x=>x!==asset.id));return;}if(ids.length>=(field.max_items||1)){notify('此素材插槽已達上限，請先取消選取');return;}setCustomMedia(targetId,key,[...ids,asset.id]);api('/assets/'+asset.id+'/use',{method:'POST'}).catch(()=>{});return;}
+
     const current = nodes.find(n=>n.id===(targetId||selected));
     if (!current) return;
     const rows = referenceRows(current.id,edges,assets), spec=current.data.spec;
@@ -1048,7 +1104,7 @@ function App() {
     .sort((a, b) => b.created_at - a.created_at);
   return (
     <TemplateContext.Provider value={{items:config?.node_templates||[],api,notify,baseDefaults:presetBase,refresh:async()=>setConfig(await api("/config"))}}><actions.Provider
-      value={{ cancel:(id)=>{api('/runs/'+id+'/cancel',{method:'POST'}).then(()=>notify('已請求取消，等待服務回應')).catch(()=>notify('取消失敗'));},groupAction,rename:(id,name)=>patch(id,{label:name}),setRole,restoreVideo:(id,spec)=>{dirty();setEdges(old=>old.filter(e=>!(e.target===id&&e.targetHandle==='prompt')));patch(id,{spec:{...spec,_template_id:'',_template_name:'',prompt_source:null,motion_context:false,context_run_id:null,context_video_asset_id:null}});}, nodes, setSegments:(id,segments)=>patch(id,{segments}),addSegment,generateSegment:(id,previous,asset)=>generate(id,undefined,{motion_context:true,context_run_id:previous||null,context_video_asset_id:asset||null}),focusNode:id=>{setSelected(id);flow.fitView({nodes:[{id}],duration:250,maxZoom:1});}, editImage:(id,spec)=>patch(id,{image_spec:spec}), resetImage, editAudio:(id,spec)=>patch(id,{audio_spec:spec}), resetAudio, bindAudio, audioOutput:(id,asset)=>patch(id,{output_id:asset}), assets, runs, duplicate, preview: setModal, remove, generate, editText: (id, text) => patch(id, {text}), config, edges, editSpec: (id, value)=>{dirty();if(value.mode){let count=0;setEdges(old=>old.flatMap(e=>{if(e.target!==id||e.targetHandle==='prompt'||e.targetHandle==='drive_audio')return [e];const a=assets.find(a=>a.id===e.data?.asset_id);if(!a)return [e];if(value.mode==='T2VA')return [];if(a.kind!=='image')return [e];const roles=value.mode==='I2VA'?['first']:value.mode==='L2VA'?['last']:value.mode==='FL2VA'?['first','last']:null;const role=roles?roles[count++]:'reference';return role?[{...e,data:{...e.data,role}}]:[];}));}setNodes(old=>old.map(n=>n.id===id&&n.data.spec?{...n,data:{...n.data,spec:{...n.data.spec,...value}}}:n));}, pickReferences: (id,role)=>setLibraryPanel({scope:"project",target:id,role}), openAssistant: setAssistantNode, removeReference: edgeId=>{dirty();setEdges(old=>old.filter(e=>e.id!==edgeId));} }}
+      value={{ setCustomMedia,customDefinitions,editCustom:(id,spec)=>patch(id,{custom_spec:spec}),applyCustom:(id,preset)=>{dirty();setEdges(old=>old.filter(e=>e.target!==id));patch(id,{custom_spec:{...preset.spec,_preset_id:preset.id,media_assets:{},text_sources:{}}});},previewCustom:async(id)=>{try{const spec=payload(id);for(const [key,source] of Object.entries(spec.text_sources||{}))spec.values[key]=nodes.find(n=>n.id===source)?.data.text||'';spec.text_sources={};setPreview(await api('/workflow/preview',{method:'POST',body:JSON.stringify(spec)}));}catch(e:any){notify(e.message);}},saveCustomPreset:async(preset)=>{try{await api('/custom-workflows/presets',{method:'POST',body:JSON.stringify(preset)});setConfig(await api('/config'));notify('模板已儲存，可在自訂工作流管理設為預設');}catch(e:any){notify(e.message);}},cancel:(id)=>{api('/runs/'+id+'/cancel',{method:'POST'}).then(()=>notify('已請求取消，等待服務回應')).catch(()=>notify('取消失敗'));},groupAction,rename:(id,name)=>patch(id,{label:name}),setRole,restoreVideo:(id,spec)=>{dirty();setEdges(old=>old.filter(e=>!(e.target===id&&e.targetHandle==='prompt')));patch(id,{spec:{...spec,_template_id:'',_template_name:'',prompt_source:null,motion_context:false,context_run_id:null,context_video_asset_id:null}});}, nodes, setSegments:(id,segments)=>patch(id,{segments}),addSegment,generateSegment:(id,previous,asset)=>generate(id,undefined,{motion_context:true,context_run_id:previous||null,context_video_asset_id:asset||null}),focusNode:id=>{setSelected(id);flow.fitView({nodes:[{id}],duration:250,maxZoom:1});}, editImage:(id,spec)=>patch(id,{image_spec:spec}), resetImage, editMotion:(id,spec)=>patch(id,{motion_spec:spec}), resetMotion, editAudio:(id,spec)=>patch(id,{audio_spec:spec}), resetAudio, bindAudio, audioOutput:(id,asset)=>patch(id,{output_id:asset}), assets, runs, duplicate, preview: setModal, remove, generate, editText: (id, text) => patch(id, {text}), config, edges, editSpec: (id, value)=>{dirty();if(value.mode){let count=0;setEdges(old=>old.flatMap(e=>{if(e.target!==id||e.targetHandle==='prompt'||e.targetHandle==='drive_audio')return [e];const a=assets.find(a=>a.id===e.data?.asset_id);if(!a)return [e];if(value.mode==='T2VA')return [];if(a.kind!=='image')return [e];const roles=value.mode==='I2VA'?['first']:value.mode==='L2VA'?['last']:value.mode==='FL2VA'?['first','last']:null;const role=roles?roles[count++]:'reference';return role?[{...e,data:{...e.data,role}}]:[];}));}setNodes(old=>old.map(n=>n.id===id&&n.data.spec?{...n,data:{...n.data,spec:{...n.data.spec,...value}}}:n));}, pickReferences: (id,role)=>setLibraryPanel({scope:"project",target:id,role}), openAssistant: setAssistantNode, removeReference: edgeId=>{dirty();setEdges(old=>old.filter(e=>e.id!==edgeId));} }}
     >
       <main>
         <header className="topbar">
@@ -1137,7 +1193,7 @@ function App() {
                         <div>
                           <strong>{asset.name}</strong>
                           <small>
-                            {kindNames[asset.kind]} ·{" "}
+                            {(kindNames as Record<string,string>)[asset.kind] || "3D／檔案"} ·{" "}
                             {asset.size
                               ? `${(asset.size / 1048576).toFixed(1)} MB`
                               : "生成結果"}
@@ -1191,8 +1247,9 @@ function App() {
               </>}
               <button role="menuitem" onClick={()=>createFromMenu("video")}>影片生成</button>
               <button role="menuitem" onClick={()=>createFromMenu("image")}>圖片生成 / 編輯</button>
+              <button role="menuitem" onClick={()=>{if(!createMenu)return;const source=nodes.find(n=>n.id===createMenu.sourceId);addMotion(createMenu.position,source);setCreateMenu(null);}}>動作遷移 / 人物替換</button>
               <button role="menuitem" onClick={()=>createFromMenu("music")}>音樂生成</button>
-              <button role="menuitem" onClick={()=>createFromMenu("tts")}>TTS 語音生成</button><button role="menuitem" onClick={addComparison}>圖片／影片比較</button>
+              <button role="menuitem" onClick={()=>createFromMenu("tts")}>TTS 語音生成</button><button role="menuitem" onClick={addComparison}>圖片／影片比較</button><button role="menuitem" onClick={()=>{setCustomOpen(true);setCreateMenu(null);}}>自訂工作流…</button>
             </div>}
 
             <ReactFlow
@@ -1200,7 +1257,7 @@ function App() {
                 ...node,
                 selected: !!node.selected || node.id === selected,
                 hidden: !!node.hidden || !!nodes.find(p=>p.id===node.parentId)?.data.collapsed,
-                className:[node.className,!(node.selected||node.id===selected)&&(node.data.kind==='generation'||(node.data.kind==='asset'&&assets.find(a=>a.id===node.data.asset_id)?.kind!=='audio'))?'preview-only-node':'',runs.some(r=>r.node_id===node.id&&activeStatuses.includes(r.status))?'node-running':''].filter(Boolean).join(' '),
+                className:[node.className,!(node.selected||node.id===selected)&&(node.data.kind==='generation'||node.data.kind==='custom'||(node.data.kind==='asset'&&assets.find(a=>a.id===node.data.asset_id)?.kind!=='audio'))?'preview-only-node':'',runs.some(r=>r.node_id===node.id&&activeStatuses.includes(r.status))?'node-running':''].filter(Boolean).join(' '),
                 ...(node.data.kind==='group'&&node.data.collapsed?{style:{...node.style,width:Number((node.data.collapsed_size as any)?.width)||Math.min(Number(node.style?.width)||420,540),height:Number((node.data.collapsed_size as any)?.height)||110},width:Number((node.data.collapsed_size as any)?.width)||Math.min(Number(node.style?.width)||420,540),height:Number((node.data.collapsed_size as any)?.height)||110}:{}),
                 ...((node.data.kind==='music'||node.data.kind==='tts'||assets.find(a=>a.id===(node.data.asset_id||node.data.output_id))?.kind==='audio')?{style:{...node.style,height:136}}:{}),
               }))}
@@ -1283,14 +1340,17 @@ function App() {
               <Controls showInteractive={false} />
             </ReactFlow>
             <div className="canvas-toolbar">
-              <button title={showEdges?"隱藏連接線":"顯示連接線"} aria-label="顯示連接線" role="switch" aria-checked={showEdges} onClick={()=>setShowEdges(v=>!v)}><Link2 size={18}/><i className={"connection-switch "+(showEdges?"on":"")}/></button><button title="將多選節點組成群組（Shift 多選）" onClick={createGroup}>群組</button>
-              <button title="儲存專案" onClick={()=>save().then(()=>notify('專案已儲存')).catch(e=>notify(e.message))}><Save size={18}/></button>
+              <button title={showEdges?"隱藏連接線":"顯示連接線"} aria-label="顯示連接線" role="switch" aria-checked={showEdges} onClick={()=>setShowEdges(v=>!v)}><Link2 size={18}/><i className={"connection-switch "+(showEdges?"on":"")}/></button>
               <button title="專案素材" onClick={()=>setLibraryPanel({scope:'project'})}><FolderOpen size={18}/></button>
-              <button title="新增 Motion Context 導演台（實驗）" onClick={addDirector}>導演</button><button title="拼接分鏡圖" onClick={()=>setMediaTool({mode:'stitch'})}><LayoutGrid size={18}/></button>
               <button title="共用資產" onClick={()=>setLibraryPanel({scope:'shared'})}><ImageIcon size={18}/></button>
-              <button title="專案生成內容" onClick={()=>setInspectorVisible(!inspectorVisible)}><PanelLeftOpen size={18}/></button>
+              <button title="拼接分鏡圖" onClick={()=>setMediaTool({mode:'stitch'})}><LayoutGrid size={18}/></button>
+              <button title="新增 Motion Context 導演台" onClick={addDirector}>導演</button>
               <button title="節點模板" onClick={()=>setTemplatesOpen(true)}>模板</button>
+              <button title="將多選節點組成群組（Shift 多選）" onClick={createGroup}>群組</button>
+              <button title="自訂工作流管理" onClick={()=>setCustomOpen(true)}>工作流</button>
+              <button title="專案生成內容" onClick={()=>setInspectorVisible(!inspectorVisible)}><PanelLeftOpen size={18}/></button>
               <button title="連線設定" onClick={showSettings}><Settings size={18}/></button>
+              <button title="儲存專案" onClick={()=>save().then(()=>notify('專案已儲存')).catch(e=>notify(e.message))}><Save size={18}/></button>
               <span className="toolbar-save-state" title={saving} aria-label={saving}><i className={saving==='已儲存'?'saved':''}/></span>
               <span />
 
@@ -1353,7 +1413,7 @@ function App() {
                 {!runs.length && <div className="history-empty"><Clock3 size={30}/><p>此專案尚無生成內容</p><small>影片、音樂與語音生成結果會顯示在這裡。</small></div>}
                 {[...runs].sort((a,b)=>b.created_at-a.created_at).slice(0,historyLimit).map(run=>{
                   const audioSpec=run.spec as Spec & {kind?:string;workflow?:string};
-                  const title=nodes.find(n=>n.id===run.node_id)?.data.label || (audioSpec.kind==='image' ? config.image_workflows?.find(w=>w.id===audioSpec.workflow)?.name || '圖片生成' : audioSpec.kind==='audio' ? config.audio_workflows?.find(w=>w.id===audioSpec.workflow)?.name || '音訊生成' : '影片生成');
+                  const title=nodes.find(n=>n.id===run.node_id)?.data.label || (audioSpec.kind==='motion' ? config.motion_workflows?.find(w=>w.id===audioSpec.workflow)?.name || '動作遷移' : audioSpec.kind==='image' ? config.image_workflows?.find(w=>w.id===audioSpec.workflow)?.name || '圖片生成' : audioSpec.kind==='audio' ? config.audio_workflows?.find(w=>w.id===audioSpec.workflow)?.name || '音訊生成' : '影片生成');
                   return <div className="history-card" key={run.id}>
                     <header><strong>{title}</strong><span>{new Date(run.created_at*1000).toLocaleString('zh-TW')}</span></header>
                     <div className={'history-status '+run.status}>{activeStatuses.includes(run.status)&&<LoaderCircle size={13} className="spin"/>}{run.stage}{run.progress!==null&&` · ${run.progress}%`}</div>
@@ -1382,7 +1442,7 @@ function App() {
         {archiveOpen&&<MediaArchive projectId={project.id} api={api} onClose={()=>setArchiveOpen(false)}/>}
         {assistantNode && nodes.some(n=>n.id===assistantNode) && <PromptPanel onPickReferences={()=>setLibraryPanel({scope:'project',target:assistantNode})} onRemoveReference={(edgeId:string)=>{dirty();setEdges(es=>es.filter(e=>e.id!==edgeId));}} onReuseReferences={(previous:any)=>reuseReferences(assistantNode,previous)} textMode={nodes.find(n=>n.id===assistantNode)?.data.kind==='text'} key={assistantNode} projectId={project.id} nodeId={assistantNode} api={api} getSpec={()=>payload(assistantNode)} saveProject={save} notify={notify} refs={referenceRows(assistantNode,edges,assets)} requirement={nodes.find(n=>n.id===assistantNode)?.data.assistant_requirement||''} onRequirement={(value:string)=>patch(assistantNode,{assistant_requirement:value})} onClose={()=>setAssistantNode(null)} onApply={async(text:string,submit:boolean)=>{const node=nodes.find(n=>n.id===assistantNode);if(node?.data.kind==='text'){patch(assistantNode,{text});}else if(node?.data.spec){const bound=edges.find(e=>e.target===assistantNode&&e.targetHandle==='prompt');if(bound)patch(bound.source,{text});patch(assistantNode,{spec:{...node.data.spec,prompt:text}});if(submit)await generate(assistantNode,text);}}}/>}
         {mediaTool&&<MediaTools key={mediaTool.asset?.id||'stitch'} {...mediaTool} assets={assets} projectId={project.id} api={api} onClose={()=>setMediaTool(null)} onSaved={(asset:Asset)=>{setAssets(old=>[...old,asset]);addAsset(asset);notify('已另存新素材，原檔保留');}}/>}
-        {libraryPanel && <LibraryPanel key={(libraryPanel.target||'')+(libraryPanel.role||'')} allowedKind={libraryPanel.role==='first'||libraryPanel.role==='last'?'image':libraryPanel.role} onEdit={(asset:Asset)=>setMediaTool({mode:'crop',asset})} projectId={project.id} initialScope={libraryPanel.scope} referenceMode={!!libraryPanel.target} selectedIds={referenceRows(libraryPanel.target,edges,assets).map((r:any)=>r.asset.id)} api={api} Media={Media} notify={notify} onClose={()=>setLibraryPanel(null)} onChanged={()=>api('/assets?project_id='+project.id).then(setAssets).catch(e=>notify(e.message))} onSelect={(asset:Asset)=>libraryPanel.target?chooseAsset(asset,libraryPanel.target,libraryPanel.role):addAsset(asset)}/>}
+        {libraryPanel && <LibraryPanel key={(libraryPanel.target||'')+(libraryPanel.role||'')} allowedKind={customSlot()?.kind||customSlot()?.type||(libraryPanel.role==='first'||libraryPanel.role==='last'?'image':libraryPanel.role)} onEdit={(asset:Asset)=>setMediaTool({mode:'crop',asset})} projectId={project.id} initialScope={libraryPanel.scope} referenceMode={!!libraryPanel.target} selectedIds={libraryPanel.role?.startsWith('custom:')?customMediaIds(libraryPanel.target!,libraryPanel.role.slice(7)):referenceRows(libraryPanel.target,edges,assets).map((r:any)=>r.asset.id)} api={api} Media={Media} notify={notify} onClose={()=>setLibraryPanel(null)} onChanged={()=>api('/assets?project_id='+project.id).then(setAssets).catch(e=>notify(e.message))} onSelect={(asset:Asset)=>libraryPanel.target?chooseAsset(asset,libraryPanel.target,libraryPanel.role):addAsset(asset)}/>}
         {toast && (
           <div className="toast" role="status">
             {toast}
@@ -1460,7 +1520,7 @@ function App() {
             </div>
           </div>
         )}
-        {templatesOpen&&config&&<TemplateManager config={config} videoDefault={defaults(config)} onClose={()=>setTemplatesOpen(false)}/>}
+        {customOpen&&config&&<CustomWorkflowManager config={config} api={api} notify={notify} onClose={()=>setCustomOpen(false)} onRefresh={async()=>setConfig(await api("/config"))} onCreate={addCustom}/>}{templatesOpen&&config&&<TemplateManager config={config} videoDefault={defaults(config)} onClose={()=>setTemplatesOpen(false)}/>}
         {settingsOpen && settings && (
           <div className="modal-overlay">
             <div className="dialog" role="dialog" aria-label="連線設定">

@@ -4,6 +4,25 @@
 
 本機執行的無限畫布，整合圖片、影片、音樂、語音及提示詞撰寫，支援 **RunningHub 與本機 ComfyUI**。不包含模型權重或生成引擎。
 
+## 自訂 API 工作流（本機設定）
+
+左側「工作流」可匯入 ComfyUI **API 格式** JSON。這是工作流設定介面，不是另一個節點編輯器；原本內建影片、圖片、音樂與 TTS 不受影響。
+
+1. 選分類（影片／圖片／音樂／TTS／3D，或新增分類），指定真正的輸出節點。
+2. 選擇要曝露的常數欄位：文字、數字、開關、選單、模型檔名、seed，或素材載入節點的檔名欄位。其他值沿用 JSON。文字可連接文字節點。
+3. 多素材使用「素材群組」：指定載入節點、檔名欄位、輸出 slot、接收節點、帶 `{index}` 的輸入名稱、起始索引及最大數量。系統依實際數量複製載入節點並接線，不受範例原有連線數限制。H3 Ref2V 可配置圖片 9、影片 3、聲音 3；輸入名稱及 slot 必須依該節點實際定義填寫，不能把圖片規則直接套到音訊或影片。
+4. 引用標記可明訂為 `<Picture {index}>`、`<Video {index}>`、`<Audio {index}>`。例如圖片群組名「圖片」，文字中的 `@圖片2` 會換成第二張實際輸入的標記。不同媒體各自編號；不需要標記的模型留空即可。生成前使用「檢查映射／執行圖」。
+5. 模式可指定各輸出 slot 的 bypass 去向，或重新連接／斷開指定輸入。不可僅刪除節點而保留懸空接線；只有輸出所需分支會提交。必填素材所在分支仍有效時，不能直接留空。
+6. 「模型庫」維護 UNet、VAE、CLIP、LoRA 等實際檔名供下拉選擇；不下載模型，也不保證遠端已安裝。多個 LoRA 需在原圖保留對應節點，分別曝露名稱及強度。
+7. 每組 RunningHub 來源分別填入對應工作流 ID；ComfyUI 直接提交編譯後 API graph。Colab 僅允許影片分類，需目前支援 `/canvas` 原生圖橋接的 notebook，且服務端已安裝此圖需要的節點／模型。
+8. 在自訂生成節點存成帶標籤的模板，可在管理面板設為該工作流預設模板。模板保存參數與提供者，不保存素材或文字節點連線。
+
+**節點編號改變會影響參數／接線映射。** 替換 JSON 後必須重新確認映射；儲存產生新版本，既有畫布節點與歷史任務固定原版，不會自動轉換。分類名稱不代表服務端必然支援；3D 目前提供標準檔案輸出下載，不提供 3D 預覽或任意自訂節點協議。API JSON 無法可靠推導所有型別、可選輸入或輸出 slot；請以節點文件和服務端定義核對。工作流、模型庫、模板儲存在本機 data 資料庫，不自動加入分享包。
+
+外部 AI API 同樣支援 `/custom-workflows`、`/custom-workflows/inspect`、`/custom-workflows/{id}/versions/{version}`、`/custom-workflows/models/library`、`/custom-workflows/presets`；完整路由與型別見啟用後的 `/api/automation/v1/schema` 以及 [操作 skill](skills/h3-canvas-api/SKILL.md)。
+
+H3 Ref2V 缺少載入節點時，可在素材群組按「H3 參考聲音」或「H3 參考影片」自動補齊。聲音使用 LoadAudio；影片使用 LoadVideo → GetVideoComponents，逐份複製完整鏈，影格與選用原音維持相同索引。原音不占獨立 Audio 引用編號。新增後儲存為新版本；既有畫布節點需選用新版本的模板或重新建立節點。
+
 ## 功能
 
 - 畫布拖曳／縮放、小地圖、節點調整大小、素材連線及生成歷史。
@@ -171,7 +190,7 @@ AI 操縱端請重新讀取 `/catalog`，依 Generation schema 設定 `seed_mode
 舊版橋接若沒有 `/object_info`，改用 `/health` 與端點清單確認，再由 ComfyUI 驗證提交的工作流。沒有 `/view` 時，一採／二採改從 `/canvas/result/{prompt_id}/{first|upscaled}` 下載。聲音參考仍需要更新後的 `/upload/audio` 端點。
 
 ### 多組生成來源與取消
-設定中的「生成服務來源」可新增及命名 ComfyUI、RunningHub、Colab 連線。原本三組連線保留為預設，舊模板不需修改。節點模板可儲存指定來源；節點也可手動改選。Colab 目前僅支援影片。每組 RunningHub 有自己的金鑰、規格與可收合的工作流 ID；相同 ID 合併顯示，勾選「拆開編輯各功能」可分別修改。來源與金鑰只存本機，分享模板的來源 ID 必須改選收件者自己的來源。執行中來源不可刪除或更換連線／金鑰。
+設定中的「生成服務來源」可新增及命名 ComfyUI、RunningHub、Colab 連線。原本三組連線保留為預設，舊模板不需修改。節點模板可儲存指定來源；節點也可手動改選。舊版 20261102 Colab 僅支援影片；Universal notebook 支援所有節點。每組 RunningHub 有自己的金鑰、規格與可收合的工作流 ID；相同 ID 合併顯示，勾選「拆開編輯各功能」可分別修改。來源與金鑰只存本機，分享模板的來源 ID 必須改選收件者自己的來源。執行中來源不可刪除或更換連線／金鑰。
 
 生成中的影片、圖片、音樂、TTS 與導演台段落提供「停止／取消」。提交中的取消會等取得遠端任務 ID 後送出，避免遺失遠端任務；正在完成的結果可能先回傳。ComfyUI 使用指定任務的 queue delete / interrupt，請使用支援 prompt_id 的新版 ComfyUI；RunningHub 使用官方取消 API，不保證退還已產生的用量。Colab 需更新原版 JSON／畫布 API 儲存格並重跑 Cell 7，才能提供 `/canvas/cancel/{prompt_id}`；舊橋接不支援時顯示失敗原因並繼續追蹤原任務，不假裝已停止。
 
@@ -180,3 +199,28 @@ AI 操縱端請重新讀取 `/catalog`，依 Generation schema 設定 `seed_mode
 分享 JSON 已附可選的 ManualSigmas，預設仍接 BasicScheduler；直接在 ComfyUI 網頁使用時可將 #358 接到 #125 的 sigmas。畫布提交時會自動切換並排除未使用節點。RunningHub 建議更新已上傳的工作流為新版 example_workflows 中的 JSON；若新建工作流，記得更新來源的 ID。Colab 請重新匯入對應兩份 JSON。
 
 Colab v0.5.1：移除 Cell 3-b 的模型預設覆寫。Cell 5 後的「⑥ 匯入雙 JSON」格不檢查 UNet／LoRA；其他模型與節點診斷僅警告，實際生成由 ComfyUI 驗證。原本 Cell 6 手動面板保留。取消、聲音上傳及輸出下載端點由 Cell 7 統一註冊；更新匯入格後，請貼上／執行完整新版 Cell 7。取消失敗僅顯示「取消失敗」。
+
+## 動作遷移／人物替換（SCAIL-2）
+
+右鍵新增「動作遷移 / 人物替換」節點，連接**參考人物圖片**、**動作來源影片**與（選用）文字節點。
+
+- 模式：**動作遷移**保留參考圖背景；**人物替換**保留影片背景（SCAIL `replacement_mode`）。
+- 長度：**單段**最多 81 幀；**長影片**自動分段接續——每段 81 幀、步進 76 幀，以前段最後 5 幀為錨點，去除重疊並做色彩校正後合併，保留原影片聲音。依官方 *Character Replacement (SCAIL-2 Extend)* blueprint 的做法在同一張 API 圖內展開，不需要 Mie loop 節點；段數上限 6（上傳影片仍限 15 秒）。
+- 預設為加速版：Distill LoRA 0.8、6 步、CFG 1、shift 5；寬高 32 的倍數。高級設定可調模型、步數、LoRA 強度、pose 強度／區間、SAM3 門檻、最多人物、排序與人物索引。
+- 可存成節點模板（分類「動作遷移」），支援 ComfyUI、RunningHub（來源設定的工作流 ID 新增「SCAIL-2 動作遷移」欄位）與 Colab。
+- 節點：ComfyUI 官方 `WanSCAILToVideo`、`SCAIL2ColoredMask`、`SAM3_VideoTrack`、`ColorTransfer`、`BatchImagesNode`，加 VideoHelperSuite 讀寫影片。需新版 ComfyUI。
+- 模型（Comfy-Org 官方 HF）：`wan2.1_14B_SCAIL_2_int8_convrot`、`wan2.1_SCAIL_2_DPO_lora_bf16`、`umt5_xxl_fp8_e4m3fn_scaled`、`clip_vision_h`、`Wan2_1_VAE_bf16`、`sam3.1_multiplex_fp16`；加速 LoRA `lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16`（官方 blueprint 指向 Kijai/WanVideo_comfy）。
+- 範例：`example_workflows/motion_scail2_single_無限畫布.json`（已移除 bypass 的慢速路徑與開關，KJ 節點換成官方節點）、`motion_scail2_single_無限畫布_api.json`、`motion_scail2_extend_無限畫布_api.json`（3 段長影片）、`motion_scail2_loop_MieNodes_無限畫布.json`（原 Mie loop 版，僅供 ComfyUI 手動使用，需要 ComfyUI-MieNodes 與 KJNodes）。
+
+## Colab Universal 遠端運算（20261112）
+
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Isha70852/minimax-h3-infinite-canvas-wf/blob/main/colab/H3_Canvas_Universal_Colab_20261112.ipynb)
+
+`colab/H3_Canvas_Universal_Colab_20261112.ipynb` 讓 Colab 像 RunningHub 一樣被畫布呼叫：畫布在本機組裝完整 API 圖，Colab 只負責執行。**不需要上傳任何 JSON**，素材由畫布前端上傳。
+
+1. Cell 1 勾選功能（H3 影片、動作遷移、圖片、YuE2、Qwen3／IndexTTS／Breeze TTS），自動預勾畫布預設模型，可個別增減；可改模型根目錄（例如 Google Drive）或單一模型的資料夾，外部資料夾自動寫入 `extra_model_paths.yaml`。模型來源優先使用 Comfy-Org 官方 Hugging Face，並放進 ComfyUI 對應類別資料夾（diffusion_models、text_encoders、vae、loras、clip_vision、checkpoints、audio_encoders、latent_upscale_models、TTS）。
+2. Cell 2 只安裝所選功能需要的節點；Cell 3 下載所選模型（可重跑、可追加）；Cell 4 啟動 ComfyUI 並列出缺少的節點。
+3. Cell 5 建立 Bearer token API 與 HTTPS tunnel；在畫布「生成服務來源」的 Colab 填入 `H3_API_URL` 與 token。所有節點（影片、圖片、音樂、TTS、動作遷移、自訂工作流）都可選 Colab。
+4. 提交前畫布會用 `/object_info` 檢查節點與模型檔名，缺模型會直接提示。
+
+舊的 20261102 notebook 保留手動生成介面；其「⑥ 匯入雙 JSON」改為選用（預設不上傳），畫布照常透過 `/prompt` 送出。

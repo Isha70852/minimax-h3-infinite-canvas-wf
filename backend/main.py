@@ -21,7 +21,8 @@ from PIL import Image
 from pydantic import BaseModel, Field
 
 from . import storage as db
-from . import provider_profiles
+from . import provider_profiles, custom_workflows
+from .custom_workflows import CustomGeneration
 from . import node_templates, connection_errors, directors
 from . import library
 from . import recycle
@@ -30,6 +31,8 @@ from .capabilities import CAPABILITIES
 from . import prompting
 from . import image_workflows
 from .image_workflows import ImageGeneration
+from . import motion_workflows
+from .motion_workflows import MotionGeneration
 from .audio_workflows import AudioGeneration, REGISTRY, catalog, compile_audio, resolve_text
 from .providers import provider, ProviderRejected
 from .workflow import VIDEO_REGISTRY, Generation, compile_workflow, MODELS, LORAS, ASPECTS, ROOT
@@ -55,11 +58,15 @@ def public_run(run):
 
 
 def parse_spec(value):
+    if value.get('kind')=='custom': return CustomGeneration(**value)
+    if value.get('kind')=='motion': return MotionGeneration(**value)
     return ImageGeneration(**value) if value.get('kind') == 'image' else AudioGeneration(**value) if value.get('kind') == 'audio' else Generation(**value)
 
 
 def compile_spec(spec, assets, filenames=None, seed=0):
+    if isinstance(spec, CustomGeneration): return custom_workflows.compile_custom(spec,assets,filenames,seed)
     if isinstance(spec, ImageGeneration): return image_workflows.compile_image(spec, assets, filenames, seed)
+    if isinstance(spec, MotionGeneration): return motion_workflows.compile_motion(spec, assets, filenames, seed)
     return compile_audio(spec, assets, filenames, seed) if isinstance(spec, AudioGeneration) else compile_workflow(spec, assets, filenames, seed)
 
 
@@ -116,7 +123,7 @@ async def execute(id):
                 outputs = []
                 for output in result['outputs']:
                     ext = Path(output['filename']).suffix.lower()
-                    if ext not in ('.mp4', '.webm', '.mov', '.png', '.jpg', '.jpeg', '.webp', '.wav', '.mp3', '.flac', '.ogg', '.gif'):
+                    if ext not in ('.mp4', '.webm', '.mov', '.png', '.jpg', '.jpeg', '.webp', '.wav', '.mp3', '.flac', '.ogg', '.gif', '.glb', '.gltf', '.obj', '.ply', '.stl', '.zip'):
                         continue
                     filename = uuid.uuid4().hex + ext
                     path = db.MEDIA / filename
@@ -127,7 +134,7 @@ async def execute(id):
                                 with path.open('wb') as file:
                                     async for chunk in response.aiter_bytes():
                                         file.write(chunk)
-                        kind = 'video' if ext in ('.mp4', '.webm', '.mov') else 'audio' if ext in ('.wav', '.mp3', '.flac', '.ogg') else 'image'
+                        kind = 'model' if ext in ('.glb','.gltf','.obj','.ply','.stl','.zip') else 'video' if ext in ('.mp4', '.webm', '.mov') else 'audio' if ext in ('.wav', '.mp3', '.flac', '.ogg') else 'image'
                         generation_pass=run.get('compiled',{}).get('output_passes',{}).get(str(output.get('node_id')))
                         pass_name={'first':'一採','second':'二採'}.get(generation_pass,'生成結果')
                         aid = uuid.uuid4().hex
@@ -233,7 +240,7 @@ async def invalid(request, error):
 def config():
     values = db.settings()
     profiles = values.get('models') or [{'name': name, 'shift_enabled': False, 'shift_video': 6, 'shift_audio': 3} for name in MODELS]
-    return {'provider_profiles': provider_profiles.public(values,catalog=True), 'node_templates': node_templates.templates(), 'models': [m['name'] for m in profiles], 'model_profiles': profiles, 'image_workflows': image_workflows.catalog(), 'audio_workflows': catalog(), 'video_two_pass_parameters': VIDEO_REGISTRY['two_pass_parameters'], 'video_defaults': values.get('video_defaults', {}), 'loras': values.get('loras') or LORAS, 'aspects': ASPECTS}
+    return {'custom_workflows':custom_workflows.catalog(),'custom_categories':custom_workflows.categories(),'custom_models':custom_workflows.models(),'custom_presets':custom_workflows.presets(),'provider_profiles': provider_profiles.public(values,catalog=True), 'node_templates': node_templates.templates(), 'models': [m['name'] for m in profiles], 'model_profiles': profiles, 'image_workflows': image_workflows.catalog(), 'motion_workflows': motion_workflows.catalog(), 'audio_workflows': catalog(), 'video_two_pass_parameters': VIDEO_REGISTRY['two_pass_parameters'], 'video_defaults': values.get('video_defaults', {}), 'loras': values.get('loras') or LORAS, 'aspects': ASPECTS}
 
 
 @app.get('/api/capabilities')
@@ -270,6 +277,7 @@ class Settings(BaseModel):
     clear_runninghub_key: bool = False
     image_workflow_ids: dict[str,str] | None = None
     audio_workflow_ids: dict[str,str] | None = None
+    motion_workflow_ids: dict[str,str] | None = None
     video_defaults: dict | None = None
 
 
@@ -297,6 +305,9 @@ def save_settings(body: Settings):
     if body.audio_workflow_ids is not None:
         if set(body.audio_workflow_ids) - REGISTRY.keys(): raise ValueError('不支援的音訊工作流。')
         if any(v and not v.isdigit() for v in body.audio_workflow_ids.values()): raise ValueError('工作流 ID 必須為數字。')
+    if body.motion_workflow_ids is not None:
+        if set(body.motion_workflow_ids) - motion_workflows.REGISTRY.keys(): raise ValueError('不支援的動作遷移工作流。')
+        if any(v and not v.isdigit() for v in body.motion_workflow_ids.values()): raise ValueError('工作流 ID 必須為數字。')
     if body.video_defaults is not None:
         defaults = Generation(**{**body.video_defaults, 'prompt': 'default', 'references': []}).model_dump()
         data['video_defaults'] = {k:v for k,v in defaults.items() if k not in ('prompt','references')}
@@ -474,7 +485,7 @@ async def upload(file: UploadFile, project_id: str | None = None, scope: str = '
 
 
 @app.post('/api/workflow/preview')
-def preview(spec: Generation | AudioGeneration | ImageGeneration):
+def preview(spec: Generation | AudioGeneration | ImageGeneration | CustomGeneration | MotionGeneration):
     return compile_spec(spec, assets_for(spec), seed=0)
 
 
@@ -482,7 +493,7 @@ class RunRequest(BaseModel):
     project_id: str
     node_id: str
     request_id: str = Field(min_length=8, max_length=100)
-    spec: Generation | AudioGeneration | ImageGeneration
+    spec: Generation | AudioGeneration | ImageGeneration | CustomGeneration | MotionGeneration
 
 
 @app.post('/api/runs')
@@ -496,8 +507,12 @@ async def start_run(body: RunRequest):
     for run in db.all_records('runs'):
         if run['project_id'] == body.project_id and run['node_id'] == body.node_id and run['status'] in ACTIVE:
             raise HTTPException(409, '此節點已有進行中的任務。')
+    if isinstance(body.spec, CustomGeneration):
+        body.spec = custom_workflows.resolve_text(body.spec,project)
     if isinstance(body.spec, ImageGeneration):
         body.spec = image_workflows.resolve_text(body.spec, project)
+    if isinstance(body.spec, MotionGeneration):
+        body.spec = motion_workflows.resolve_text(body.spec, project)
     if isinstance(body.spec, AudioGeneration):
         body.spec = resolve_text(body.spec, project)
     if isinstance(body.spec, Generation):
@@ -534,6 +549,11 @@ async def start_run(body: RunRequest):
         settings['workflow_id'] = settings.get('image_workflow_ids', {}).get(body.spec.workflow, '')
     if isinstance(body.spec, AudioGeneration):
         settings['workflow_id'] = settings.get('audio_workflow_ids', {}).get(body.spec.workflow, '')
+    if isinstance(body.spec, MotionGeneration):
+        settings['workflow_id'] = settings.get('motion_workflow_ids', {}).get(body.spec.workflow, '')
+    if isinstance(body.spec,CustomGeneration):
+        package=custom_workflows.get_version(body.spec.package_id,body.spec.version)
+        settings['workflow_id']=package.get('runninghub_ids',{}).get(body.spec.provider_profile_id or 'default:runninghub','')
     if body.spec.provider == 'colab' and (not settings.get('colab_url') or not settings.get('colab_token')):
         raise ValueError('請先設定 Colab API 網址與 token。')
     if body.spec.provider == 'runninghub' and not settings['runninghub_key']:
@@ -543,7 +563,7 @@ async def start_run(body: RunRequest):
     run = db.put('runs', body.request_id, {'project_id': body.project_id, 'node_id': body.node_id,
         'spec': body.spec.model_dump(), 'seed': str(seed), 'compiled': compiled, 'status': 'uploading',
         'stage': '準備生成', 'progress': None, 'outputs': [], 'created_at': time.time(),
-        'connection': {**{k: settings[k] for k in ('comfy_url', 'colab_url', 'runninghub_url', 'workflow_id', 'instance_type','native_comfy')}, 'output_nodes': compiled.get('output_nodes', [])}})
+        'connection': {**{k: settings[k] for k in ('comfy_url', 'colab_url', 'runninghub_url', 'workflow_id', 'instance_type','native_comfy')}, 'output_nodes': compiled.get('output_nodes', []), 'custom_workflow':isinstance(body.spec,CustomGeneration)}})
     launch(run['id'])
     return public_run(run)
 
@@ -607,6 +627,7 @@ async def resume(id: str):
 
 
 from . import automation
+app.include_router(custom_workflows.router)
 automation.install(app, globals())
 
 app.mount('/media', StaticFiles(directory=db.MEDIA), name='media')

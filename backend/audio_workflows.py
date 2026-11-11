@@ -9,7 +9,7 @@ REGISTRY = json.loads((ROOT/'workflows/audio_registry.json').read_text(encoding=
 class AudioGeneration(BaseModel):
     provider_profile_id: str | None = None
     kind: Literal['audio'] = 'audio'
-    provider: Literal['comfyui','runninghub'] = 'comfyui'
+    provider: Literal['comfyui','runninghub','colab'] = 'comfyui'
     workflow: str
     values: dict[str, str | float] = Field(default_factory=dict)
     audio_asset_id: str | None = None

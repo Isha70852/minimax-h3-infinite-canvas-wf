@@ -1,0 +1,341 @@
+{
+  "scail2": {
+    "name": "SCAIL-2 動作遷移／人物替換",
+    "version": 1,
+    "template": "motion_scail2.json",
+    "output": "400",
+    "segment_nodes": [
+      "100",
+      "101",
+      "102",
+      "103",
+      "104",
+      "105",
+      "106"
+    ],
+    "segment_stride": 20,
+    "chunk_frames": 81,
+    "overlap_frames": 5,
+    "nodes": {
+      "reference_scale": "14",
+      "reference_track": "16",
+      "drive_load": "100",
+      "drive_info": "101",
+      "drive_track": "102",
+      "mask": "103",
+      "conditioning": "104",
+      "sampler": "105",
+      "decode": "106",
+      "output": "400"
+    },
+    "fields": [
+      {
+        "key": "prompt",
+        "label": "動作／畫面描述",
+        "type": "text",
+        "node": "9",
+        "input": "text",
+        "default": "the person is dancing"
+      },
+      {
+        "key": "reference_image",
+        "label": "參考人物圖片",
+        "type": "image",
+        "node": "13",
+        "input": "image"
+      },
+      {
+        "key": "drive_video",
+        "label": "動作來源影片",
+        "type": "video",
+        "node": "100",
+        "input": "video"
+      },
+      {
+        "key": "mode",
+        "label": "模式",
+        "type": "select",
+        "options": [
+          "animate",
+          "replace"
+        ],
+        "option_labels": {
+          "animate": "動作遷移（保留參考圖背景）",
+          "replace": "人物替換（保留影片背景）"
+        },
+        "default": "animate"
+      },
+      {
+        "key": "length_mode",
+        "label": "長度",
+        "type": "select",
+        "options": [
+          "single",
+          "extend"
+        ],
+        "option_labels": {
+          "single": "單段（最多 81 幀）",
+          "extend": "長影片（自動分段接續）"
+        },
+        "default": "single"
+      },
+      {
+        "key": "width",
+        "label": "寬（32 倍數）",
+        "type": "integer",
+        "min": 256,
+        "max": 1280,
+        "step": 32,
+        "default": 512
+      },
+      {
+        "key": "height",
+        "label": "高（32 倍數）",
+        "type": "integer",
+        "min": 256,
+        "max": 1280,
+        "step": 32,
+        "default": 896
+      },
+      {
+        "key": "frames",
+        "label": "幀數（4n+1）",
+        "type": "integer",
+        "min": 17,
+        "max": 81,
+        "step": 4,
+        "default": 81,
+        "show_when": {
+          "length_mode": "single"
+        }
+      },
+      {
+        "key": "max_segments",
+        "label": "最多段數",
+        "type": "integer",
+        "min": 2,
+        "max": 6,
+        "step": 1,
+        "default": 5,
+        "show_when": {
+          "length_mode": "extend"
+        }
+      },
+      {
+        "key": "video_mask_prompt",
+        "label": "影片遮罩目標（SAM3）",
+        "type": "string",
+        "default": "person",
+        "node": "11",
+        "input": "text"
+      },
+      {
+        "key": "image_mask_prompt",
+        "label": "圖片遮罩目標（SAM3）",
+        "type": "string",
+        "default": "person",
+        "node": "12",
+        "input": "text"
+      },
+      {
+        "key": "keep_audio",
+        "label": "保留來源影片聲音",
+        "type": "boolean",
+        "default": true
+      },
+      {
+        "key": "seed",
+        "label": "Seed（-1 隨機）",
+        "type": "integer",
+        "min": -1,
+        "max": 9007199254740991,
+        "step": 1,
+        "default": -1
+      },
+      {
+        "key": "model",
+        "label": "SCAIL-2 模型",
+        "type": "select",
+        "options": [
+          "wan2.1_14B_SCAIL_2_int8_convrot.safetensors",
+          "wan2.1_14B_SCAIL_2_fp8_scaled.safetensors",
+          "wan2.1_14B_SCAIL_2_fp16.safetensors",
+          "wan2.1_14B_SCAIL_2_mxfp8.safetensors",
+          "wan2.1_14B_SCAIL_2_nvfp4_mxpf8_mix.safetensors"
+        ],
+        "default": "wan2.1_14B_SCAIL_2_int8_convrot.safetensors",
+        "node": "1",
+        "input": "unet_name",
+        "advanced": true
+      },
+      {
+        "key": "steps",
+        "label": "Steps",
+        "type": "integer",
+        "min": 1,
+        "max": 60,
+        "step": 1,
+        "default": 6,
+        "node": "18",
+        "input": "steps",
+        "advanced": true
+      },
+      {
+        "key": "cfg",
+        "label": "CFG",
+        "type": "number",
+        "min": 0,
+        "max": 20,
+        "step": 0.1,
+        "default": 1.0,
+        "node": "105",
+        "input": "cfg",
+        "advanced": true
+      },
+      {
+        "key": "shift",
+        "label": "Shift",
+        "type": "number",
+        "min": 0,
+        "max": 20,
+        "step": 0.5,
+        "default": 5.0,
+        "node": "4",
+        "input": "shift",
+        "advanced": true
+      },
+      {
+        "key": "sampler",
+        "label": "Sampler",
+        "type": "string",
+        "default": "euler",
+        "node": "17",
+        "input": "sampler_name",
+        "advanced": true
+      },
+      {
+        "key": "scheduler",
+        "label": "Scheduler",
+        "type": "string",
+        "default": "simple",
+        "node": "18",
+        "input": "scheduler",
+        "advanced": true
+      },
+      {
+        "key": "distill_lora_strength",
+        "label": "加速 LoRA 強度",
+        "type": "number",
+        "min": 0,
+        "max": 2,
+        "step": 0.05,
+        "default": 0.8,
+        "node": "3",
+        "input": "strength_model",
+        "advanced": true
+      },
+      {
+        "key": "dpo_lora_strength",
+        "label": "DPO LoRA 強度",
+        "type": "number",
+        "min": 0,
+        "max": 2,
+        "step": 0.05,
+        "default": 1.0,
+        "node": "2",
+        "input": "strength_model",
+        "advanced": true
+      },
+      {
+        "key": "pose_strength",
+        "label": "Pose strength",
+        "type": "number",
+        "min": 0,
+        "max": 10,
+        "step": 0.05,
+        "default": 1.0,
+        "node": "104",
+        "input": "pose_strength",
+        "advanced": true
+      },
+      {
+        "key": "pose_start",
+        "label": "Pose start",
+        "type": "number",
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "default": 0.0,
+        "node": "104",
+        "input": "pose_start",
+        "advanced": true
+      },
+      {
+        "key": "pose_end",
+        "label": "Pose end",
+        "type": "number",
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "default": 1.0,
+        "node": "104",
+        "input": "pose_end",
+        "advanced": true
+      },
+      {
+        "key": "detection_threshold",
+        "label": "SAM3 偵測門檻",
+        "type": "number",
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "default": 0.5,
+        "advanced": true
+      },
+      {
+        "key": "max_objects",
+        "label": "SAM3 最多人物（0=不限）",
+        "type": "integer",
+        "min": 0,
+        "max": 64,
+        "step": 1,
+        "default": 4,
+        "advanced": true
+      },
+      {
+        "key": "sort_by",
+        "label": "人物排序",
+        "type": "select",
+        "options": [
+          "left_to_right",
+          "area",
+          "none"
+        ],
+        "default": "left_to_right",
+        "node": "103",
+        "input": "sort_by",
+        "advanced": true
+      },
+      {
+        "key": "object_indices",
+        "label": "指定人物索引（例 0,1；空白=全部）",
+        "type": "string",
+        "default": "",
+        "optional": true,
+        "node": "103",
+        "input": "object_indices",
+        "advanced": true
+      },
+      {
+        "key": "color_match",
+        "label": "分段色彩校正",
+        "type": "boolean",
+        "default": true,
+        "advanced": true,
+        "show_when": {
+          "length_mode": "extend"
+        }
+      }
+    ]
+  }
+}

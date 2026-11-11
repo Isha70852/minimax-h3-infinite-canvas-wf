@@ -108,7 +108,7 @@ class ComfyUI:
         outputs, latents = [], []
         for node_id, node in history.get('outputs', {}).items():
             if self.output_nodes and node_id not in self.output_nodes: continue
-            for key in ('gifs', 'videos', 'images', 'audio', 'latents'):
+            for key in ('gifs', 'videos', 'images', 'audio', 'latents', 'meshes', 'models', 'files'):
                 for item in node.get(key, []):
                     if item.get('filename'):
                         (latents if key=='latents' else outputs).append({'url': self.base + '/view?' + urlencode({k: item[k] for k in ('filename', 'subfolder', 'type') if k in item}), 'filename': item['filename'], 'node_id':str(node_id)})
@@ -217,7 +217,7 @@ class RunningHub:
     async def submit(self, graph, client_id, seed):
         await self.preflight(graph)
         payload = {'apiKey': self.key, 'workflow': json.dumps(graph, ensure_ascii=False),
-                   'nodeInfoList': [{'nodeId': '129', 'fieldName': 'noise_seed', 'fieldValue': str(seed)}] if 'noise_seed' in graph.get('129', {}).get('inputs', {}) else [],
+                   'nodeInfoList': [{'nodeId': '129', 'fieldName': 'noise_seed', 'fieldValue': str(graph['129']['inputs']['noise_seed'])}] if 'noise_seed' in graph.get('129', {}).get('inputs', {}) else [],
                    'instanceType': self.settings['instance_type']}
         payload['workflowId'] = str(self.settings['workflow_id']).strip()
         body = rh_checked(await self.client.post('/task/openapi/create', json=payload))
@@ -242,7 +242,7 @@ class RunningHub:
                 if not r.get('url') or (self.settings.get('output_nodes') and str(r.get('nodeId')) not in self.settings['output_nodes']): continue
                 ext = str(r.get('outputType') or '').lower().lstrip('.')
                 item = {'url':r['url'], 'filename':'result.'+ext,'node_id':str(r.get('nodeId'))}
-                (latents if ext in ('zip','safetensors','latent') else media).append(item)
+                (latents if ext in ('safetensors','latent') or (ext=='zip' and not self.settings.get('custom_workflow')) else media).append(item)
             return {'status': 'success', 'usage': body.get('usage'), 'task_usage_list': body.get('taskUsageList', []), 'outputs':media, 'latents':latents}
         if status in ('FAILED', 'FAILURE', 'CANCELED'):
             raise ValueError(body.get('errorMessage') or body.get('failedReason') or 'RunningHub 生成失敗')

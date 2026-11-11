@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 from . import storage as db
 
 KINDS=('comfyui','runninghub','colab')
-FIELDS=('comfy_url','runninghub_url','runninghub_key','colab_url','colab_token','workflow_id','instance_type','image_workflow_ids','audio_workflow_ids')
+FIELDS=('comfy_url','runninghub_url','runninghub_key','colab_url','colab_token','workflow_id','instance_type','image_workflow_ids','audio_workflow_ids','motion_workflow_ids')
 SECRETS=('runninghub_key','colab_token')
 
 def profiles(settings):
@@ -38,13 +38,13 @@ def merge(items, settings):
         if url and (parsed.scheme not in ('http','https') or not parsed.hostname or parsed.username or parsed.password): raise ValueError('來源網址必須為 HTTP/HTTPS，且不可含帳密。')
         if kind=='runninghub' and url.rstrip('/') not in ('https://www.runninghub.ai','https://www.runninghub.cn'): raise ValueError('RunningHub 僅支援官方網址。')
         if entry['instance_type'] not in ('default','plus','ultra'): raise ValueError('不支援的運算規格。')
-        for value in [entry['workflow_id'],*entry['image_workflow_ids'].values(),*entry['audio_workflow_ids'].values()]:
+        for value in [entry['workflow_id'],*entry['image_workflow_ids'].values(),*entry['audio_workflow_ids'].values(),*entry['motion_workflow_ids'].values()]:
             if value and not str(value).isdigit(): raise ValueError('工作流 ID 必須為數字。')
         active=[r for r in db.all_records('runs') if r.get('status') in ('uploading','submitting','queued','running','downloading','reconnecting') and (r.get('spec',{}).get('provider_profile_id') or 'default:'+r.get('spec',{}).get('provider',''))==ident]
         if active and ident in old and any(entry.get(k)!=old[ident].get(k) for k in (*SECRETS,'comfy_url','colab_url','runninghub_url')): raise ValueError('此來源仍有執行中任務，請完成或取消後再變更連線與金鑰。')
         if ident.startswith('default:'):
             names[ident]=name
-            keys={'comfyui':['comfy_url'],'colab':['colab_url','colab_token'],'runninghub':['runninghub_url','runninghub_key','workflow_id','instance_type','image_workflow_ids','audio_workflow_ids']}[kind]
+            keys={'comfyui':['comfy_url'],'colab':['colab_url','colab_token'],'runninghub':['runninghub_url','runninghub_key','workflow_id','instance_type','image_workflow_ids','audio_workflow_ids','motion_workflow_ids']}[kind]
             legacy.update({k:entry[k] for k in keys})
         else: result.append(entry)
     removed=set(old)-ids

@@ -1,6 +1,6 @@
 ---
 name: h3-canvas-api
-description: Operate a locally running H3 Infinite Canvas through its opt-in API to upload media, write prompts, configure workflows, and generate image, audio, or video segments with RunningHub or local ComfyUI. Use when the user wants an AI coding tool to operate this canvas project.
+description: Operate a locally running H3 Infinite Canvas through its opt-in API to upload media, write prompts, configure workflows, and generate image, audio, video or SCAIL-2 motion-transfer segments with RunningHub, local ComfyUI or a Colab bridge. Use when the user wants an AI coding tool to operate this canvas project.
 ---
 
 # H3 Canvas API
@@ -29,6 +29,7 @@ Every node has `id`, `type:"card"`, `position:{"x":0,"y":0}`, and `data`. Use st
 - Video generation: `data:{"kind":"generation","label":"Scene 1","spec":VIDEO_SPEC}`.
 - Image generation: `data:{"kind":"imagegen","label":"Storyboard","image_spec":IMAGE_SPEC}`.
 - Music/TTS: `data:{"kind":"music" or "tts","label":"Voice","audio_spec":AUDIO_SPEC}`.
+- Motion transfer / character replacement: `data:{"kind":"motiongen","label":"Dance","motion_spec":MOTION_SPEC}` (see below).
 
 A reference edge is `{"id":"edge-uuid","source":"asset-node-id","target":"generation-node-id","data":{"asset_id":"ASSET_ID","role":"reference"}}`. For video first/last frames use roles `first` / `last` with mode `FL2VA`. For a video prompt text connection use `targetHandle:"prompt"`, source text-node ID, and also set `spec.prompt_source` in the submitted spec. Other text fields use their catalog key as targetHandle and `text_sources:{FIELD_KEY:TEXT_NODE_ID}`. Image edges use the image field key as targetHandle; audio inputs use `audio`.
 
@@ -60,7 +61,7 @@ IndexTTS 2.5 supports `audio_assets:{"audio":"SPEAKER_ASSET_ID","emotion_audio":
 
 ## Node parameter templates (v0.2)
 
-These are generation parameters, separate from AI writing-instruction templates. Discover `GET /node-templates` (also `/catalog.node_templates`). Categories: `video`, `image`, `music`, `tts`. Create with `POST /node-templates`, update with `PUT /node-templates/{id}`; body: `{category,name,tags:["tag"],is_default:false,spec:{...}}`. Only mapped parameters persist; scene text, media bindings and motion context are excluded. Users manage them from the left canvas menu. Delete a preset only when requested with `DELETE /node-templates/{id}`.
+These are generation parameters, separate from AI writing-instruction templates. Discover `GET /node-templates` (also `/catalog.node_templates`). Categories: `video`, `image`, `motion`, `music`, `tts`. Create with `POST /node-templates`, update with `PUT /node-templates/{id}`; body: `{category,name,tags:["tag"],is_default:false,spec:{...}}`. Only mapped parameters persist; scene text, media bindings and motion context are excluded. Users manage them from the left canvas menu. Delete a preset only when requested with `DELETE /node-templates/{id}`.
 
 `POST /runs` additionally accepts top-level `template_id`, `template_tag`, `use_default_template` (default true). ID or an unambiguous tag selects a preset; otherwise the category default is used. Explicit spec fields override preset values; `values` merges by key, LoRA lists replace in full. Omit unwanted explicit defaults so they do not override the chosen preset. An explicit incompatible workflow is rejected; an incompatible category default is skipped. Set `use_default_template:false` to use only the supplied spec. Preview does not apply templates: merge the selected preset and overrides yourself before `/workflow/preview`, then use the same effective spec for submission. Use schema fields supported by that workflow; audio workflows do not acquire arbitrary LoRA support from templates.
 
@@ -98,7 +99,7 @@ Avoid concurrent graph edits while the user is editing the same project: browser
 
 
 ### Colab video generation
-`Generation.provider` also accepts `colab` (video only). Configure Colab URL/token locally in Settings before automation; catalog exposes the video schema, not credentials. All other video fields and reference roles are unchanged. The backend compiles the same unified graph used for ComfyUI/RunningHub and posts it to the notebook `/prompt` endpoint, not `/canvas/generate`. The 20261102 notebook requires the updated canvas bridge cell and Cell 7, with the unified API JSON uploaded and all referenced models/custom nodes installed. Output assets keep first/second pass labels and can be used by director Motion Context. Do not supply `colab` for image/audio specs. Preserve group `data.collapsed_size` when updating projects; expanded dimensions remain in node style. Do not persist rendered collapsed dimensions over expanded style.
+`Generation.provider` also accepts `colab`. With the universal notebook (below) image, audio, motion and custom specs accept `colab` too; the legacy 20261102 notebook is video only. Configure Colab URL/token locally in Settings before automation; catalog exposes the video schema, not credentials. All other video fields and reference roles are unchanged. The backend compiles the same unified graph used for ComfyUI/RunningHub and posts it to the notebook `/prompt` endpoint, not `/canvas/generate`. The 20261102 notebook requires the updated canvas bridge cell and Cell 7, with the unified API JSON uploaded and all referenced models/custom nodes installed. Output assets keep first/second pass labels and can be used by director Motion Context. Preserve group `data.collapsed_size` when updating projects; expanded dimensions remain in node style. Do not persist rendered collapsed dimensions over expanded style.
 
 Legacy Colab bridges without `/object_info` can submit full graphs after health/endpoint checks; ComfyUI validates the submission. Downloads fall back to `/canvas/result/{prompt_id}/{first|upscaled}` for output nodes 356/357. Audio references require `/upload/audio`; do not repeatedly submit an unsupported audio job.
 
@@ -111,3 +112,29 @@ POST `/runs/{id}/cancel` requests cancellation. Poll the same ID: `cancel_reques
 Video specs accept `sigma_mode:"scheduler"|"manual"` (default scheduler) and `manual_sigmas` as a comma-separated descending nonnegative decimal string ending in zero. Default: `1.0, 0.972973, 0.923077, 0.8, 0.571429, 0.333333, 0.0`. Manual mode rewires first-pass sampler #125 to ManualSigmas #358; first-pass steps/scheduler are retained but inactive. Second-pass refinement sigmas are unchanged. Templates persist both fields. Preview validates the schedule; remote node availability requires provider support.
 
 Colab v0.5.1: the dual-JSON import cell (⑥, after Cell 5) no longer blocks on model presence. Cell 7 registers authenticated `/canvas/cancel/{prompt_id}`, `/upload/audio`, and `/view`. Update and rerun the full Cell 7 for cancellation support. `cancel_error` is the concise string `取消失敗`.
+
+
+## Custom workflow packages
+
+All paths below are relative to the authenticated automation base. Read `/custom-workflows` and `/custom-workflows/{id}/versions/{version}` before building a spec. `POST /custom-workflows/inspect` accepts `{name,graph}`; its candidate types are hints, not authoritative custom-node schemas. `POST /custom-workflows` and `PUT /custom-workflows/{id}` accept the Package schema from `/schema`. Each update creates a pinned revision; re-map IDs explicitly when replacing a graph. Do not guess bypass types, indexed input names, slot numbers, or copy private sample prompts into shared files.
+
+A canvas node uses `data:{kind:"custom",label:"Name",custom_spec:SPEC}`. SPEC has `kind:"custom"`, `package_id`, `version`, `provider`, optional `provider_profile_id`, `mode`, `values:{FIELD_KEY:VALUE}`, `media_assets:{FIELD_OR_GROUP_KEY:[ASSET_ID,...]}`, and optional `text_sources:{TEXT_FIELD_KEY:TEXT_NODE_ID}`. Media order determines explicit tag numbering; repeated groups have configurable maximum counts, not the number connected in the source graph. Seed values should be `"random"` or decimal strings to preserve 64-bit precision. Visible edges use `targetHandle:FIELD_OR_GROUP_KEY`; submit bindings in SPEC as well.
+
+Use the existing preview/run/poll/cancel endpoints. Resolve text bindings for preview; run submission resolves them from the project. `/custom-workflows/presets/list` lists presets; POST `/custom-workflows/presets` accepts `{name,tags,is_default,spec}`. Submit with `template_id`, unique `template_tag`, or `use_default_template`; an explicit spec version must match the chosen preset version. Model library GET/PUT `/custom-workflows/models/library` uses `{groups:{unet:[...],vae:[...],clip:[...],lora:[...]}}` for PUT. It stores filenames only. Never interpret a successful compile as proof the provider has the required custom nodes/models. Colab category restrictions were removed for the universal notebook (the legacy notebook still only has the H3 video stack installed); 3D outputs are downloadable standard files, not arbitrary executable plugins.
+
+Built-in video specs also accept `clip_name`, `video_vae_name`, and `audio_vae_name`; blank preserves the graph default. Custom run results expose `compiled.seed_values` as decimal strings keyed by `NODE_ID:INPUT_NAME`. To replay these exactly, submit `seed_overrides` with that map; do not parse uint64 seeds as JavaScript numbers. Overrides must match active seed inputs in the pinned graph.
+
+
+## SCAIL-2 motion transfer / character replacement (motiongen)
+
+Catalog key: `config.motion_workflows` (currently `scail2`). MOTION_SPEC is `{"kind":"motion","provider":"comfyui|runninghub|colab","provider_profile_id":null,"workflow":"scail2","values":{...},"media_assets":{"reference_image":IMAGE_ASSET_ID,"drive_video":VIDEO_ASSET_ID},"text_sources":{"prompt":TEXT_NODE_ID}}`. Visible edges use targetHandle `reference_image`, `drive_video` or `prompt`; submit the same bindings in the spec.
+
+- `values.mode`: `animate` (motion transfer — keep the reference image background) or `replace` (character replacement — keep the drive video background; maps to SCAIL `replacement_mode:true`).
+- `values.length_mode`: `single` (one chunk, `frames` 17–81, 4n+1) or `extend` (long video). Extend unrolls official SCAIL-2 chunks inside one graph: 81 frames per chunk, 76-frame stride, 5-frame `previous_frames` anchor, overlap trimmed and colour-matched (`color_match`), joined with `BatchImagesNode`, audio from the drive video (`keep_audio`). `max_segments` 2–6 caps the chunk count. The backend probes the uploaded (24 fps normalized, ≤15 s) video locally; `run.compiled.segments` reports the plan.
+- `width`/`height` must be multiples of 32. `seed` -1 = fresh task seed. Advanced keys: `model`, `steps` (default 6), `cfg` (1), `shift` (5), `sampler`, `scheduler`, `distill_lora_strength` (0.8), `dpo_lora_strength` (1), `pose_strength/start/end`, `detection_threshold`, `max_objects`, `sort_by`, `object_indices`, `video_mask_prompt`, `image_mask_prompt`. Defaults are the accelerated recipe (lightx2v distill LoRA); there is no slow 40-step path.
+- Nodes are official ComfyUI core (`WanSCAILToVideo`, `SCAIL2ColoredMask`, `SAM3_VideoTrack`, `ColorTransfer`, `BatchImagesNode`, `ImageScale`…) plus VideoHelperSuite load/save. Models: `wan2.1_14B_SCAIL_2_int8_convrot`, SCAIL-2 DPO LoRA, lightx2v I2V distill LoRA, `umt5_xxl_fp8_e4m3fn_scaled`, `clip_vision_h`, `Wan2_1_VAE_bf16`, `sam3.1_multiplex_fp16`.
+- RunningHub uses `motion_workflow_ids.scail2` from the selected source (upload `example_workflows/motion_scail2_single_無限畫布.json` to RunningHub to obtain it). Output is one MP4 asset.
+
+## Colab universal notebook (`colab/H3_Canvas_Universal_Colab_20261112.ipynb`)
+
+No workflow JSON is uploaded to Colab. The notebook installs only the ticked feature packs/models (official Comfy-Org Hugging Face sources first), starts ComfyUI on localhost and exposes an authenticated native bridge: `/object_info`, `/prompt`, `/history/{id}`, `/queue`, `/interrupt`, `/upload/image` (also `type=output` latents), `/canvas/upload/video`, `/upload/audio`, `/view`, `/canvas/cancel/{id}`, `/health`, `/heartbeat`, `/models`. The canvas `Colab` provider compiles the same graphs as ComfyUI and posts them there, so every node kind works when its nodes/models are installed. Preflight uses `/object_info`, so missing model files are reported before submission. The user configures `H3_API_URL` and token locally; never request or log them.

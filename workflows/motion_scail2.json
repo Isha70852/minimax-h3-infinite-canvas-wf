@@ -1,0 +1,438 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "wan2.1_14B_SCAIL_2_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "_meta": {
+      "title": "SCAIL-2 UNet"
+    }
+  },
+  "2": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "lora_name": "wan2.1_SCAIL_2_DPO_lora_bf16.safetensors",
+      "strength_model": 1.0
+    },
+    "_meta": {
+      "title": "SCAIL-2 DPO LoRA"
+    }
+  },
+  "3": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "model": [
+        "2",
+        0
+      ],
+      "lora_name": "lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors",
+      "strength_model": 0.8
+    },
+    "_meta": {
+      "title": "Distill LoRA (accelerated)"
+    }
+  },
+  "4": {
+    "class_type": "ModelSamplingSD3",
+    "inputs": {
+      "model": [
+        "3",
+        0
+      ],
+      "shift": 5.0
+    },
+    "_meta": {
+      "title": "Shift"
+    }
+  },
+  "5": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+      "type": "wan",
+      "device": "default"
+    },
+    "_meta": {
+      "title": "Text Encoder"
+    }
+  },
+  "6": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "Wan2_1_VAE_bf16.safetensors"
+    },
+    "_meta": {
+      "title": "Wan 2.1 VAE"
+    }
+  },
+  "7": {
+    "class_type": "CLIPVisionLoader",
+    "inputs": {
+      "clip_name": "clip_vision_h.safetensors"
+    },
+    "_meta": {
+      "title": "CLIP Vision"
+    }
+  },
+  "8": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "sam3.1_multiplex_fp16.safetensors"
+    },
+    "_meta": {
+      "title": "SAM 3.1"
+    }
+  },
+  "9": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "5",
+        0
+      ],
+      "text": "the person is dancing"
+    },
+    "_meta": {
+      "title": "Positive Prompt"
+    }
+  },
+  "10": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "5",
+        0
+      ],
+      "text": ""
+    },
+    "_meta": {
+      "title": "Negative Prompt"
+    }
+  },
+  "11": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "8",
+        1
+      ],
+      "text": "person"
+    },
+    "_meta": {
+      "title": "Video Mask Prompt"
+    }
+  },
+  "12": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "8",
+        1
+      ],
+      "text": "person"
+    },
+    "_meta": {
+      "title": "Image Mask Prompt"
+    }
+  },
+  "13": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "reference.png"
+    },
+    "_meta": {
+      "title": "Reference Image"
+    }
+  },
+  "14": {
+    "class_type": "ImageScale",
+    "inputs": {
+      "image": [
+        "13",
+        0
+      ],
+      "upscale_method": "area",
+      "width": 512,
+      "height": 896,
+      "crop": "center"
+    },
+    "_meta": {
+      "title": "Resize Reference"
+    }
+  },
+  "15": {
+    "class_type": "CLIPVisionEncode",
+    "inputs": {
+      "clip_vision": [
+        "7",
+        0
+      ],
+      "image": [
+        "14",
+        0
+      ],
+      "crop": "none"
+    },
+    "_meta": {
+      "title": "CLIP Vision Encode"
+    }
+  },
+  "16": {
+    "class_type": "SAM3_VideoTrack",
+    "inputs": {
+      "images": [
+        "14",
+        0
+      ],
+      "model": [
+        "8",
+        0
+      ],
+      "conditioning": [
+        "12",
+        0
+      ],
+      "detection_threshold": 0.5,
+      "max_objects": 4,
+      "detect_interval": 1
+    },
+    "_meta": {
+      "title": "SAM3 Reference Track"
+    }
+  },
+  "17": {
+    "class_type": "KSamplerSelect",
+    "inputs": {
+      "sampler_name": "euler"
+    },
+    "_meta": {
+      "title": "Sampler"
+    }
+  },
+  "18": {
+    "class_type": "BasicScheduler",
+    "inputs": {
+      "model": [
+        "3",
+        0
+      ],
+      "scheduler": "simple",
+      "steps": 6,
+      "denoise": 1.0
+    },
+    "_meta": {
+      "title": "Scheduler"
+    }
+  },
+  "100": {
+    "class_type": "VHS_LoadVideo",
+    "inputs": {
+      "video": "drive.mp4",
+      "force_rate": 0,
+      "custom_width": 512,
+      "custom_height": 896,
+      "frame_load_cap": 81,
+      "skip_first_frames": 0,
+      "select_every_nth": 1,
+      "format": "AnimateDiff"
+    },
+    "_meta": {
+      "title": "Drive Video"
+    }
+  },
+  "101": {
+    "class_type": "VHS_VideoInfoLoaded",
+    "inputs": {
+      "video_info": [
+        "100",
+        3
+      ]
+    },
+    "_meta": {
+      "title": "Drive Video Info"
+    }
+  },
+  "102": {
+    "class_type": "SAM3_VideoTrack",
+    "inputs": {
+      "images": [
+        "100",
+        0
+      ],
+      "model": [
+        "8",
+        0
+      ],
+      "conditioning": [
+        "11",
+        0
+      ],
+      "detection_threshold": 0.5,
+      "max_objects": 4,
+      "detect_interval": 1
+    },
+    "_meta": {
+      "title": "SAM3 Drive Track"
+    }
+  },
+  "103": {
+    "class_type": "SCAIL2ColoredMask",
+    "inputs": {
+      "driving_track_data": [
+        "102",
+        0
+      ],
+      "ref_track_data": [
+        "16",
+        0
+      ],
+      "object_indices": "",
+      "sort_by": "left_to_right",
+      "replacement_mode": false
+    },
+    "_meta": {
+      "title": "SCAIL-2 Colored Mask"
+    }
+  },
+  "104": {
+    "class_type": "WanSCAILToVideo",
+    "inputs": {
+      "positive": [
+        "9",
+        0
+      ],
+      "negative": [
+        "10",
+        0
+      ],
+      "vae": [
+        "6",
+        0
+      ],
+      "width": [
+        "101",
+        3
+      ],
+      "height": [
+        "101",
+        4
+      ],
+      "length": 81,
+      "batch_size": 1,
+      "pose_video": [
+        "100",
+        0
+      ],
+      "pose_video_mask": [
+        "103",
+        0
+      ],
+      "replacement_mode": false,
+      "pose_strength": 1.0,
+      "pose_start": 0.0,
+      "pose_end": 1.0,
+      "reference_image": [
+        "14",
+        0
+      ],
+      "reference_image_mask": [
+        "103",
+        1
+      ],
+      "clip_vision_output": [
+        "15",
+        0
+      ],
+      "video_frame_offset": 0,
+      "previous_frame_count": 5
+    },
+    "_meta": {
+      "title": "WanSCAILToVideo"
+    }
+  },
+  "105": {
+    "class_type": "SamplerCustom",
+    "inputs": {
+      "model": [
+        "4",
+        0
+      ],
+      "add_noise": true,
+      "noise_seed": 1,
+      "cfg": 1.0,
+      "positive": [
+        "104",
+        0
+      ],
+      "negative": [
+        "104",
+        1
+      ],
+      "sampler": [
+        "17",
+        0
+      ],
+      "sigmas": [
+        "18",
+        0
+      ],
+      "latent_image": [
+        "104",
+        2
+      ]
+    },
+    "_meta": {
+      "title": "SamplerCustom"
+    }
+  },
+  "106": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "105",
+        1
+      ],
+      "vae": [
+        "6",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "400": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "images": [
+        "106",
+        0
+      ],
+      "audio": [
+        "100",
+        2
+      ],
+      "frame_rate": [
+        "101",
+        0
+      ],
+      "loop_count": 0,
+      "filename_prefix": "H3Canvas/motion",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": false,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": true
+    },
+    "_meta": {
+      "title": "Save MP4"
+    }
+  }
+}

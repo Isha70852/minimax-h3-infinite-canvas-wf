@@ -5,13 +5,13 @@ import uuid
 from typing import Literal
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from . import storage as db, audio_workflows, image_workflows
+from . import storage as db, audio_workflows, image_workflows, motion_workflows
 from .workflow import Generation
 
 router = APIRouter(prefix='/api/node-templates', tags=['Node templates'])
 
 class Template(BaseModel):
-    category: Literal['video', 'image', 'music', 'tts']
+    category: Literal['video', 'image', 'music', 'tts', 'motion']
     name: str = Field(min_length=1, max_length=120)
     tags: list[str] = Field(default_factory=list, max_length=30)
     spec: dict
@@ -24,11 +24,11 @@ def clean(category, spec):
         validated = Generation.model_validate({**result, 'prompt':'validation'})
         if 'noise_seed' in result: result['noise_seed']=validated.noise_seed
         return result
-    registry = image_workflows.REGISTRY if category == 'image' else audio_workflows.REGISTRY
+    registry = image_workflows.REGISTRY if category == 'image' else motion_workflows.REGISTRY if category == 'motion' else audio_workflows.REGISTRY
     entry = registry.get(spec.get('workflow'))
-    if not entry or (category != 'image' and entry['category'] != category):
+    if not entry or (category not in ('image','motion') and entry['category'] != category):
         raise ValueError('模板分類與工作流不符。')
-    allowed = {f['key'] for f in entry['fields'] if f['type'] not in ('text','audio','image')}
+    allowed = {f['key'] for f in entry['fields'] if f['type'] not in ('text','audio','image','video')}
     values = {k:v for k,v in spec.get('values',{}).items() if k in allowed}
     for f in entry['fields']:
         if f['key'] not in values: continue
@@ -39,12 +39,12 @@ def clean(category, spec):
         if f['type'] in ('integer','number'):
             if isinstance(v,bool) or not isinstance(v,(int,float)) or not math.isfinite(v) or not f.get('min',-math.inf)<=v<=f.get('max',math.inf): raise ValueError('模板數值超出範圍：'+f['key'])
             if f['type']=='integer' and v!=int(v): raise ValueError('需要整數：'+f['key'])
-            if f['key'] in ('width','height') and v%16: raise ValueError('圖片寬高需為 16 的倍數。')
-    result = {'kind':'image' if category=='image' else 'audio', 'workflow':spec['workflow'], 'provider':spec.get('provider','comfyui'), 'provider_profile_id':spec.get('provider_profile_id'), 'values':values}
+            if f['key'] in ('width','height') and v%(32 if category=='motion' else 16): raise ValueError('寬高需為 '+('32' if category=='motion' else '16')+' 的倍數。')
+    result = {'kind':{'image':'image','motion':'motion'}.get(category,'audio'), 'workflow':spec['workflow'], 'provider':spec.get('provider','comfyui'), 'provider_profile_id':spec.get('provider_profile_id'), 'values':values}
     if category == 'image':
         result['loras'] = spec.get('loras',[])
         if result['loras'] and 'lora' not in entry: raise ValueError('此工作流不支援 LoRA。')
-    cls = image_workflows.ImageGeneration if category=='image' else audio_workflows.AudioGeneration
+    cls = image_workflows.ImageGeneration if category=='image' else motion_workflows.MotionGeneration if category=='motion' else audio_workflows.AudioGeneration
     cls.model_validate(result)
     if len(json.dumps(result)) > 100000: raise ValueError('模板過大。')
     return result

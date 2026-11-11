@@ -27,6 +27,9 @@ class VideoLoRA(BaseModel):
 
 
 class Generation(BaseModel):
+    clip_name: str = Field(default="", max_length=500)
+    video_vae_name: str = Field(default="", max_length=500)
+    audio_vae_name: str = Field(default="", max_length=500)
     provider_profile_id: str | None = None
     seed_mode: Literal['fixed', 'randomize'] | None = None
     audio_mode: Literal['native','reference_only','lock_source','remix_source'] = 'native'
@@ -145,6 +148,10 @@ def compile_workflow(spec: Generation, assets: dict, filenames: dict | None = No
     config = VIDEO_REGISTRY
     N = config['nodes']
     graph = json.loads((ROOT / 'workflows' / config['motion_template' if spec.motion_context else 'template']).read_text(encoding='utf-8-sig'))
+    for key, (role, field) in config.get('model_fields',{}).items():
+        value=getattr(spec,key,'').strip()
+        if value:
+            graph[N[role]]['inputs'][field]=value
     cond = graph[N['condition']]['inputs']
     for key in list(cond):
         if key.startswith('ref_') and '.' in key or key in ('first_frame', 'last_frame', 'drive_audio', 'final_audio'):

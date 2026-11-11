@@ -4,6 +4,24 @@
 
 A local infinite canvas for images, video, music, speech and prompt writing, powered by **RunningHub or your local ComfyUI**. Model weights and generation servers are not included.
 
+## Custom API workflows
+
+Open **工作流 (Workflows)** in the left toolbar and import a ComfyUI **API-format JSON**. Built-in generators remain available.
+
+- Choose an output category (video, image, music, TTS, 3D, or a new category) and the actual output nodes. Expose only selected primitive parameters or media-loader filename fields; other values retain their JSON defaults. Text fields can bind text nodes.
+- Repeated media groups specify a loader node/file field/output slot, receiver node, indexed input pattern containing `{index}`, starting index, and maximum count. Loaders are cloned for the actual input count. H3 Ref2V can be configured for 9 images, 3 videos and 3 audio files even when the imported example connects only three images. Verify each media type's actual input names and slots against the server's node definition.
+- Explicit tag patterns such as `<Picture {index}>` map `@GROUP_LABEL2` to the second supplied item; image/audio/video numbering is independent. Leave tags empty for workflows that do not use them. Preview the compiled graph and mappings before submitting.
+- Modes declare bypass destinations **per output slot** and explicit reconnect/disconnect rules. Only output dependencies are submitted. Required active media inputs cannot be left empty: disconnect the unused branch through a mode.
+- The model library stores actual UNet/VAE/CLIP/LoRA filenames, not downloads or aliases. Expose each LoRA node's filename/strength separately when a graph has multiple LoRAs.
+- Configure a RunningHub workflow ID for each named source. Local ComfyUI receives the compiled graph directly. Colab is video-only and requires the current `/canvas` native-graph bridge plus the graph's installed nodes/models.
+- Save node settings as tagged presets and choose a default per workflow in the manager. Presets store parameters/provider selection, excluding media and text-node bindings.
+
+**Changing node IDs affects bindings.** Recheck mappings when replacing JSON. Saving creates an immutable revision; existing nodes/history remain pinned to their original revision. JSON alone cannot reliably describe all optional inputs, types or output slots. Custom node protocols may require adapters. 3D currently means standard downloadable output files, not a 3D viewer. Definitions, model lists and presets remain in the local data database and are not included automatically in distribution packages.
+
+The authenticated automation API exposes `/custom-workflows` (including inspection, version retrieval, model library and preset routes). See `/api/automation/v1/schema` and the [API skill](skills/h3-canvas-api/SKILL.md).
+
+H3 Ref2V media groups include quick-add audio/video presets even when loaders are absent. Audio uses LoadAudio; video uses LoadVideo → GetVideoComponents. Each input clones the full chain; frames and optional soundtrack share the same index. Video soundtracks do not consume standalone Audio tags. Save a new revision and create a node or apply a preset pinned to that revision for existing canvases.
+
 ## Features
 
 - Pan/zoom canvas, minimap, resizable nodes, connected references and generation history.
@@ -177,3 +195,16 @@ Active video, image, music, TTS and director segments expose Stop/Cancel. Submis
 Video advanced settings offer BasicScheduler (unchanged default) or ManualSigmas. ManualSigmas #358 replaces the first-pass sigma input of SamplerCustomAdvanced #125. First-pass Steps/Scheduler do not apply in manual mode; the default seven values define six intervals: `1.0, 0.972973, 0.923077, 0.8, 0.571429, 0.333333, 0.0`. Templates and director segments retain this choice; second-pass refinement planning is unchanged. The server must provide ManualSigmas (recent ComfyUI or the appropriate KJNodes version). Shared JSONs include an optional disconnected ManualSigmas node; BasicScheduler stays wired by default. Canvas compiles the selected connection automatically. Update the uploaded RunningHub workflow from example_workflows; update the source ID if creating a new workflow. Reimport both JSONs in Colab.
 
 Colab v0.5.1 removes the Cell 3-b model-default override. The “⑥ Import dual JSON” cell after Cell 5 skips UNet/LoRA checks; other model/node diagnostics only warn. ComfyUI performs validation on submission. The original Cell 6 manual panel remains. Cell 7 now registers cancellation, audio upload and output download routes; rerun the complete updated Cell 7 after updating the import cell. Cancellation failures display only a short failure message.
+
+## Motion transfer / character replacement (SCAIL-2)
+
+Add a **Motion transfer / character replacement** node from the canvas context menu, then connect a reference character image, a driving video and optionally a text node.
+
+- Modes: *animate* keeps the reference background; *replace* keeps the video background (SCAIL `replacement_mode`).
+- Length: *single* (≤81 frames) or *extend*: 81-frame chunks with a 76-frame stride and a 5-frame anchor, overlap trimmed, colour matched and joined in one API graph, following ComfyUI's official *Character Replacement (SCAIL-2 Extend)* blueprint — no loop custom nodes. Up to 6 chunks (uploads remain ≤15 s).
+- Accelerated defaults: distill LoRA 0.8, 6 steps, CFG 1, shift 5. Templates (category *motion*), ComfyUI, RunningHub (`motion_workflow_ids`) and Colab are supported.
+- Official core nodes plus VideoHelperSuite; models from Comfy-Org Hugging Face. Examples: `example_workflows/motion_scail2_*`.
+
+## Colab universal backend (20261112)
+
+`colab/H3_Canvas_Universal_Colab_20261112.ipynb` lets Colab act like RunningHub: the canvas compiles complete API graphs and the notebook only executes them. No workflow JSON upload is needed. Tick the features you need; only their node packs and models are installed (official Comfy-Org sources first, each in its ComfyUI category folder; root or per-model folders can be changed). Cell 5 starts a token-protected native bridge and a tunnel; enter `H3_API_URL` and the token in the canvas Colab source. Every node kind can then use Colab. The legacy 20261102 notebook keeps its manual UI; its dual-JSON import is now opt-in.

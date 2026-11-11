@@ -34,7 +34,10 @@
     "upscale": "339",
     "reconcile": "341",
     "mixer": "342",
-    "manual_sigmas": "358"
+    "manual_sigmas": "358",
+    "clip": "128",
+    "video_vae": "119",
+    "audio_vae": "120"
   },
   "fields": {
     "model": [
@@ -123,5 +126,19 @@
       "restart_steps": 3,
       "restart_seed": "708124950291568"
     }
+  },
+  "model_fields": {
+    "clip_name": [
+      "clip",
+      "clip_name"
+    ],
+    "video_vae_name": [
+      "video_vae",
+      "vae_name"
+    ],
+    "audio_vae_name": [
+      "audio_vae",
+      "vae_name"
+    ]
   }
 }
