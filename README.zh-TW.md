@@ -94,9 +94,9 @@ Colab 文件可在 Google Colab 開啟，依筆記本設定執行環境與認證
 
 影片節點的高級功能可填寫 **Noise seed**；選擇 `randomize` 每次隨機，或選 `fixed` 並填入 seed 以重用。生成結果、歷史與導演台顯示此次實際 seed，可按「沿用此 Noise seed」或套用歷史版本。API 使用 `spec.noise_seed` 十進位字串（0–18446744073709551615），回傳 `seed` 亦為字串，避免 JavaScript 大整數精度損失。相同 seed 不保證不同模型、參數或環境的結果一致。RH 幣只適用 RunningHub；本機 ComfyUI 不需回傳用量欄位，本機顯示的是包含排隊及儲存的任務總耗時。
 
-`prompts/` 是 AI 撰寫提示詞模板的來源：放入 UTF-8 `.md` 或 `.txt`，每個檔案為一個模板，檔名（不含副檔名）為顯示名稱，全文作為模板內容。已附上 H3、圖片、音樂及 TTS 範例；依用途自行選擇。這些是給 AI 的撰寫規則，不是生成工作流。此資料夾與「節點參數模板」（仍存本機 data）不同。
+AI 撰寫提示詞模板分兩處：**內建模板**隨程式提供，位於 `backend/builtin_prompts/`（H3、圖片、音樂、TTS 範例），唯讀。**你的模板**只存在本機 `data/prompts/`：每個 UTF-8 `.md`／`.txt` 檔為一個模板，檔名（不含副檔名）為顯示名稱，全文為模板內容。`data/` 不會進 Git 也不會打包，所以個人模板永遠不必再從 commit 移除。這些與生成工作流、節點參數模板不同。
 
-在 AI 撰寫設定新增／編輯後按「儲存設定與模板」，會寫回 `prompts/`；改名稱會更名檔案。刪除與覆寫前的舊內容備份在 `prompts/.trash/`，不納入 Git 或 release。也可直接用文字編輯器修改，重新開啟設定或提示詞助手即可讀取；若外部檔案已變更，儲存會要求重新載入以避免覆蓋。預設模板選擇仍存本機設定。原程式內建模板已移除，舊 SQLite 模板不再作為來源；歷史草稿保存的模板快照仍保留。發布時會包含 `prompts/` 的目前內容，請勿放入密鑰或私人劇情。
+在 AI 撰寫設定新增／編輯後按「儲存設定與模板」，會寫入 `data/prompts/`。修改內建模板會建立同名個人覆寫，改回原文即恢復內建；刪除或改名內建模板只會隱藏（記錄於 `data/prompts/.hidden.json`）。覆寫與刪除前的內容備份在 `data/prompts/.trash/`。也可直接編輯 `data/prompts/` 內的檔案，重新開啟設定即可讀取；若外部檔案已變更，儲存會要求重新載入。首次啟動時，舊的專案根目錄 `prompts/` 中與內建不同的檔案會一次性複製到 `data/prompts/`；該資料夾現在已被 Git 忽略。若要把新模板公開給所有使用者，請放進 `backend/builtin_prompts/`。
 
 ## 進階：修改未開放的模型與參數
 
@@ -144,7 +144,7 @@ Colab 文件可在 Google Colab 開啟，依筆記本設定執行環境與認證
 - `audio_mode` 預設 `native`；`lock_source`、`remix_source` 需另外選擇 drive audio 聲音素材，或連接聲音節點至專用輸入，不會自動占用參考聲音編號。一、二採共用相同素材。圖片用途需指定：首幀 I2VA 接 first、尾幀 L2VA 接 last、首尾 FL2VA 接 first＋last、參考 Ref2VA 接 reference；不符合模式會在送出前提示。
 - 每個影片節點可覆寫 RunningHub 的 Standard／Plus／Ultra 機型，或沿用全域設定；不影響本機 ComfyUI。二採高解析度需要較大顯存。
 - 節點名稱可直接編輯；提示詞的 `@` 選單從已連接的素材中挑選，在游標位置插入。影片放大會沿用預覽的靜音狀態。
-- 發布僅包含 `scripts/public_prompts.json` 列出的 11 個已同意公開模板。新增模板預設不加入 Git／release，需另外指定並更新清單。
+- 發布包只包含 `backend/builtin_prompts/` 的內建模板；`data/prompts/` 的個人模板永遠不會打包。
 
 AI 操縱端請重新讀取 `/catalog`，依 Generation schema 設定 `seed_mode`、`audio_mode`、`drive_audio_asset_id`、`two_pass`、`save_first_pass`、`two_pass_parameters`、`instance_type`。二採預設值由 `/catalog.config.video_two_pass_parameters` 提供，接法請參考隨附 skill。
 
