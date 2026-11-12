@@ -16,6 +16,13 @@ import React, {
   useContext,
 } from "react";
 import { createRoot } from "react-dom/client";
+
+/** Kraft paper (default) or the original dark palette; only colours change. */
+function applyTheme(theme: string) {
+  document.documentElement.dataset.theme = theme;
+  try { localStorage.setItem("yukine-theme", theme); } catch {}
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#101112" : "#e0cfad");
+}
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -66,6 +73,8 @@ import {
   VolumeX,
   Scissors,
   LayoutGrid,
+  Sun,
+  Moon,
 } from "lucide-react";
 import {
   uid,
@@ -78,7 +87,9 @@ import {
   resolutionLabel,
 } from "./canvas.mjs";
 import "@xyflow/react/dist/style.css";
+import "./theme.tokens.css";
 import "./style.css";
+import "./theme.css";
 import { LibraryPanel } from "./LibraryPanel";
 import { AutomationSettings, StudioInfo } from "./AutomationSettings";
 import { PromptPanel } from "./PromptPanel";
@@ -483,6 +494,7 @@ function App() {
     [runs, setRuns] = useState<Run[]>([]);
   const [selected, setSelected] = useState<string | null>(null),
     [sidebar, setSidebar] = useState(false),
+    [theme, setTheme] = useState<string>(()=>document.documentElement.dataset.theme==='dark'?'dark':'light'),
     [tabName, setTabName] = useState<"assets" | "projects">("assets"),
     [inspectorTab, setInspectorTab] = useState<"edit" | "history">("edit");
   const [modal, setModal] = useState<Asset | null>(null),
@@ -1110,6 +1122,7 @@ function App() {
         <header className="topbar">
           <StudioInfo/>
 
+          <button className="icon-button theme-toggle" title={theme==='dark'?'切換為牛皮紙配色':'切換為暗色配色'} aria-label="切換配色" onClick={()=>{const next=theme==='dark'?'light':'dark';setTheme(next);applyTheme(next);}}>{theme==='dark'?<Sun size={17}/>:<Moon size={17}/>}</button>
           <span className="divider" />
           <button
             className="icon-button"
@@ -1325,17 +1338,17 @@ function App() {
                 );
                 if (ns.some((n) => n.id === selected)) setSelected(null);
               }}
-              colorMode="dark"
+              colorMode={theme==="dark"?"dark":"light"}
               proOptions={{ hideAttribution: true }}
             >
-              <Background color="#303335" gap={24} size={1} />
+              <Background color="var(--grid-dot)" gap={24} size={1} />
               <MiniMap
                 pannable
                 zoomable
                 nodeColor={(n) =>
-                  n.data.kind === "generation" ? "#ddd" : "#656565"
+                  n.data.kind === "generation" ? "var(--gdd)" : "var(--g66)"
                 }
-                maskColor="#101112c9"
+                maskColor="color-mix(in srgb, var(--g10) 79%, transparent)"
               />
               <Controls showInteractive={false} />
             </ReactFlow>
@@ -1380,7 +1393,7 @@ function App() {
                 <p>
                   從一張圖、一段聲音，或一句想像開始。
                   <br />
-                  在無限畫布上，串起你的下一個故事。
+                  在雪音畫布上，串起你的下一個故事。
                 </p>
                 <div>
                   <button

@@ -237,6 +237,23 @@
         ]
       },
       {
+        "key": "download_if_missing",
+        "label": "缺少模型時自動下載",
+        "type": "select",
+        "node": "18",
+        "field": "download_if_missing",
+        "cast": "bool",
+        "default": "true",
+        "options": [
+          "true",
+          "false"
+        ],
+        "option_labels": {
+          "true": "開啟（首次執行會下載模型）",
+          "false": "關閉（模型需已放好）"
+        }
+      },
+      {
         "key": "text",
         "label": "輸出的文字",
         "type": "text",
@@ -287,6 +304,23 @@
           "bf16 (best quality)",
           "int8 (smallest, slower)"
         ]
+      },
+      {
+        "key": "download_if_missing",
+        "label": "缺少模型時自動下載",
+        "type": "select",
+        "node": "18",
+        "field": "download_if_missing",
+        "cast": "bool",
+        "default": "true",
+        "options": [
+          "true",
+          "false"
+        ],
+        "option_labels": {
+          "true": "開啟（首次執行會下載模型）",
+          "false": "關閉（模型需已放好）"
+        }
       },
       {
         "key": "text",
@@ -347,6 +381,23 @@
           "bf16 (best quality)",
           "int8 (smallest, slower)"
         ]
+      },
+      {
+        "key": "download_if_missing",
+        "label": "缺少模型時自動下載",
+        "type": "select",
+        "node": "18",
+        "field": "download_if_missing",
+        "cast": "bool",
+        "default": "true",
+        "options": [
+          "true",
+          "false"
+        ],
+        "option_labels": {
+          "true": "開啟（首次執行會下載模型）",
+          "false": "關閉（模型需已放好）"
+        }
       },
       {
         "key": "text",

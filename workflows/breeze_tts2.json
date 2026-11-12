@@ -86,7 +86,7 @@
       "device": "auto",
       "attention": "auto",
       "decode_mode": "cuda_graphs",
-      "download_if_missing": false
+      "download_if_missing": true
     },
     "class_type": "BreezeTTS2LoadModel"
   },

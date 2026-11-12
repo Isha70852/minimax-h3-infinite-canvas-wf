@@ -63,6 +63,7 @@ def compile_audio(spec, assets, filenames=None, seed=0):
                 if not isinstance(value,str) or (not value.strip() and not f.get('optional')) or len(value)>100000:
                     raise ValueError(f"請填寫有效的 {f['label']}。")
             elif f['type']=='select' and value not in f['options']: raise ValueError(f"不支援的 {f['label']}。")
+            if f.get('cast')=='bool': value=value=='true'
             elif f['type']=='number':
                 value=float(value)
                 if not f['min']<=value<=f['max']: raise ValueError('情感權重需介於 0 和 1。')

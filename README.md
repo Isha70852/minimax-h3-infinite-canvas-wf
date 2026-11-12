@@ -1,48 +1,36 @@
-# MiniMax H3 Infinite Canvas · Wizard Forest Studio
+# Yukine Palette (雪音畫布)
 
-[繁體中文](README.zh-TW.md) · [Releases](https://github.com/Isha70852/minimax-h3-infinite-canvas-wf/releases) · [API skill](skills/h3-canvas-api/SKILL.md)
+[繁體中文](README.zh-TW.md) · [Download a release](https://github.com/Isha70852/minimax-h3-infinite-canvas-wf/releases) · [Guide for AI tools (skill)](skills/h3-canvas-api/SKILL.md)
 
-A local infinite canvas for images, video, music, speech and prompt writing, powered by **RunningHub or your local ComfyUI**. Model weights and generation servers are not included.
+Yukine Palette is an infinite canvas that runs on your own computer. Drop images, videos, sounds and text onto the canvas, connect them with lines, and generate videos, images, music and speech — or make a reference character copy the motion in a video.
 
-## Custom API workflows
+The canvas contains no AI models itself. Generation runs on the service you choose: **RunningHub** (cloud), **your own ComfyUI**, or **Google Colab** (free or paid GPUs).
 
-Open **工作流 (Workflows)** in the left toolbar and import a ComfyUI **API-format JSON**. Built-in generators remain available.
+## What it can do
 
-- Choose an output category (video, image, music, TTS, 3D, or a new category) and the actual output nodes. Expose only selected primitive parameters or media-loader filename fields; other values retain their JSON defaults. Text fields can bind text nodes.
-- Repeated media groups specify a loader node/file field/output slot, receiver node, indexed input pattern containing `{index}`, starting index, and maximum count. Loaders are cloned for the actual input count. H3 Ref2V can be configured for 9 images, 3 videos and 3 audio files even when the imported example connects only three images. Verify each media type's actual input names and slots against the server's node definition.
-- Explicit tag patterns such as `<Picture {index}>` map `@GROUP_LABEL2` to the second supplied item; image/audio/video numbering is independent. Leave tags empty for workflows that do not use them. Preview the compiled graph and mappings before submitting.
-- Modes declare bypass destinations **per output slot** and explicit reconnect/disconnect rules. Only output dependencies are submitted. Required active media inputs cannot be left empty: disconnect the unused branch through a mode.
-- The model library stores actual UNet/VAE/CLIP/LoRA filenames, not downloads or aliases. Expose each LoRA node's filename/strength separately when a graph has multiple LoRAs.
-- Configure a RunningHub workflow ID for each named source. Local ComfyUI receives the compiled graph directly. Colab is video-only and requires the current `/canvas` native-graph bridge plus the graph's installed nodes/models.
-- Save node settings as tagged presets and choose a default per workflow in the manager. Presets store parameters/provider selection, excluding media and text-node bindings.
+| Area | Features |
+|---|---|
+| Video | MiniMax H3: text-to-video, reference-to-video, first/last frame, second-pass upscaling, and a "director" that continues from the previous clip |
+| Motion transfer | SCAIL-2: animate a reference character with a video's motion, or replace the people in a video with your character |
+| Images | Z-Image Turbo, FLUX.2 klein image editing, MOSS Image, Anima |
+| Music & speech | YuE2 music, Qwen3 TTS, IndexTTS 2.5, Breeze TTS 2 |
+| Custom workflows | Import your own ComfyUI API workflows and choose which fields to edit on the canvas |
+| Helpers | AI prompt assistant, media library, media viewer with A/B compare, trimming, audio extraction, storyboard stitching, groups |
 
-**Changing node IDs affects bindings.** Recheck mappings when replacing JSON. Saving creates an immutable revision; existing nodes/history remain pinned to their original revision. JSON alone cannot reliably describe all optional inputs, types or output slots. Custom node protocols may require adapters. 3D currently means standard downloadable output files, not a 3D viewer. Definitions, model lists and presets remain in the local data database and are not included automatically in distribution packages.
+The default look is kraft paper. The moon/sun button at the top left switches to the original dark colours (colours only; nothing else changes).
 
-The authenticated automation API exposes `/custom-workflows` (including inspection, version retrieval, model library and preset routes). See `/api/automation/v1/schema` and the [API skill](skills/h3-canvas-api/SKILL.md).
+## Quick start (Windows)
 
-H3 Ref2V media groups include quick-add audio/video presets even when loaders are absent. Audio uses LoadAudio; video uses LoadVideo → GetVideoComponents. Each input clones the full chain; frames and optional soundtrack share the same index. Video soundtracks do not consume standalone Audio tags. Save a new revision and create a node or apply a preset pinned to that revision for existing canvases.
-
-## Features
-
-- Pan/zoom canvas, minimap, resizable nodes, connected references and generation history.
-- MiniMax H3 text/reference/first-last-frame video generation; director segments with MP4 motion context (frames and audio from the preceding clip).
-- MOSS Image, FLUX.2 klein editing, Z-Image Turbo, Anima; YuE2 music, Qwen3 TTS, IndexTTS 2.5 and Breeze TTS 2.
-- Shared assets and project-specific media, recycling, previews, media trimming, audio extraction and labeled storyboard image composition.
-- AI prompt drafts with optional previous AI/manual scene context, editable templates and streaming output.
-- Opt-in token-protected automation API for coding agents; discover workflows and schemas rather than hardcoding model inputs.
-
-## Windows quick start
-
-**Release ZIP:** extract into a writable folder. Install Python 3.10+ with `python` available in PATH, then run:
+**Release ZIP (easiest):** unzip it, install [Python 3.10+](https://www.python.org/) (tick "Add to PATH"), then run:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\install-runtime.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\start.ps1
 ```
 
-Open **http://127.0.0.1:8766**. Alternatively double-click `啟動畫布.cmd` after installing the runtime. The release includes the built frontend; Node.js is not needed to run it.
+Open **http://127.0.0.1:8766**. Later you can just double-click `啟動畫布.cmd`. Node.js is not needed.
 
-**From source:** install Python 3.10+ and Node.js 20 LTS or newer, then:
+**From source:** you also need Node.js 20+.
 
 ```powershell
 git clone https://github.com/Isha70852/minimax-h3-infinite-canvas-wf.git
@@ -51,161 +39,148 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\setup.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\start.ps1
 ```
 
-Dependencies are installed in this folder (`.venv`, `node_modules`, local caches). Stop the server with Ctrl+C before updating. Back up `data/`; updates must not replace it with another user's data.
+Before updating, stop the server (Ctrl+C) and back up the `data/` folder — your projects and settings live there.
 
-## Connect a generation backend
+## Connect a generation service
 
-**RunningHub:** import an appropriate public workflow from `example_workflows/` into your own account, resolve missing models/nodes there, then enter your API key and your own workflow ID in Settings. Set IDs separately for normal video, MP4 motion context, image and audio workflows. Shared files contain no personal workflow IDs or keys. Standard/Plus/Ultra select the requested provider tier; generation consumes your service credits.
+Open the gear icon → **Generation sources**. You can add and name several sources; every node can pick which one to use.
 
-**Local ComfyUI:** install the required models and custom nodes separately. Start ComfyUI and enter its URL (default `http://127.0.0.1:8188`). Workflow IDs are not required locally. The canvas submits API-format graphs, uploads references and reads generated results. Checkpoint filenames must match the server.
+### RunningHub (cloud)
+1. Import the workflows from `example_workflows/` into your own RunningHub account.
+2. Enter your API key and the workflow ID for each feature in settings.
+3. Runs use your account's credits; Standard / Plus / Ultra select the machine size.
 
-Create a project, double-click empty canvas to add nodes, upload media and connect it to a generation node. Select a function, write a prompt, adjust parameters and submit. Configure default video parameters and prompt providers in Settings. Input files in the public workflows are intentionally empty; replace them before running in ComfyUI/RunningHub.
+### Your own ComfyUI
+1. Install the nodes and models the workflows need, then start ComfyUI.
+2. Enter its address in settings (default `http://127.0.0.1:8188`). No workflow IDs are needed — the canvas builds the full workflow and sends it.
+3. Model file names must match your installation (edit them under "Model and LoRA names" in settings).
 
-For continuation, add segments to a director, generate the first, then the next. Each segment may use different prompts/materials. The preceding MP4 supplies motion context; no latent transfer is needed. Overlap trimming can shorten the final duration. Concatenation is a separate editing step.
+### Google Colab
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Isha70852/minimax-h3-infinite-canvas-wf/blob/main/colab/Yukine_Palette_Colab.ipynb)
 
-## External AI / automation
+Use `colab/Yukine_Palette_Colab.ipynb`. It works like RunningHub, but **you never upload workflow JSON files**:
 
-Enable **Settings → External AI operation API** and copy the one-time token. Give your coding agent [this skill](skills/h3-canvas-api/SKILL.md), the local service URL and the token. Base: `http://127.0.0.1:8766/api/automation/v1`; use `Authorization: Bearer TOKEN`.
+1. **Cell 1** – tick the features you want; the needed models are ticked for you. You can change where models are stored (for example Google Drive).
+2. **Cell 2** – installs ComfyUI, the nodes for your features, and ComfyUI-Manager (to install more nodes from the ComfyUI web page).
+3. **Cell 3** – downloads the models (safe to re-run or extend later).
+4. **Cell 4** – starts ComfyUI.
+5. **Cell 5** – opens a secure link and shows `H3_API_URL` and a token. Paste both into a Colab source on the canvas.
 
-The API supports discovery, project read/write, image/video/audio uploads, optional AI drafting, generation submission and status/results. It can chain motion-context segments. It does not expose provider credentials or shell execution. Disabling the interface blocks new requests, not already-submitted jobs. Avoid simultaneous browser/API edits to the same project; reload afterward. Internal browser endpoints are separate from this opt-in interface. Keep the server on localhost; it is not a hardened public multi-user service.
+Every node type (video, image, music, TTS, motion transfer, custom workflows) can use Colab. Before sending, the canvas checks that the required nodes and models exist there. The last cell opens the ComfyUI web page so you can inspect examples or install packages.
 
-## Repository layout and private storage
+> The older `MiniMax_H3_MotionContext_Remote_20261102.ipynb` keeps its manual generation panel; its "import two JSON files" step is now optional.
 
-| Path | Purpose |
+## Basic use
+
+1. Create a project, then **double-click empty space** (or right-click) to add nodes. Drag files onto the canvas or add them from the library.
+2. Connect media nodes to a generation node, write a prompt, adjust settings and press Generate.
+3. Results appear on the node and in "Project outputs" on the right. Running jobs can be stopped.
+
+Tips:
+- **Node templates** save a node's settings (not its media or text) and can be applied to new nodes automatically.
+- **Director**: to continue a video clip by clip, press "Generate this segment" in the director. It feeds the previous clip in as picture and sound context. The video node's own Generate button does not continue.
+- **Groups**: Shift-select nodes, then press Group on the left. Groups can be moved, arranged and collapsed.
+- **`@` in prompts** inserts a marker for a connected media item.
+- **Noise seed**: fix it in the advanced settings to reproduce a result; history lets you reuse a seed.
+
+## Feature notes
+
+### Video (MiniMax H3)
+- All video modes share one workflow. On RunningHub you only need one "unified video workflow ID" (import `MiniMax_H3_一採保留_二採Latent放大_無限畫布.json`).
+- "Second pass" gives a higher resolution; "also keep first pass" saves both versions. Output is 24 fps.
+- Image roles must match the mode: first frame → first, last frame → last, reference image → reference.
+- Uploaded videos are converted to 24 fps. There is no length limit; each workflow trims or splits what it needs.
+
+### Motion transfer / character replacement (SCAIL-2)
+Right-click → "Motion transfer / character replacement", then connect one **reference character image** and one **motion video**.
+
+- **Motion transfer** keeps the reference image's background and animates the character.
+- **Character replacement** keeps the video's background and swaps the person for your character.
+- **Length**: one segment is up to 81 frames. "Long video" splits the clip into chained segments (up to 6) and keeps the original audio.
+- The reference image is padded by default so tall character art doesn't lose its head.
+- "Person to track in the video" describes the person in the video (e.g. `person`). To replace one person, set "max people" to 1.
+- **Replacing several people**: put all characters side by side in one reference image, in the same order as the people in the video (earlier appearance first, then left to right), set "max people" to that number and sorting to `left_to_right`. Videos with cuts can confuse identities; use "start frame" to begin where everyone is visible.
+- The defaults are the fast 6-step recipe and rarely need changing.
+
+### Music and speech
+- YuE2 makes songs from lyrics or covers; Qwen3, IndexTTS 2.5 and Breeze TTS 2 clone or design voices.
+- IndexTTS 2.5 accepts an optional emotion reference; its emotion weight uses ComfyUI's built-in Float node.
+- Breeze TTS 2 has "download missing model" on by default, so the first run downloads the weights. Turn it off if the files are already in place.
+
+### Custom workflows
+Use **Workflows** on the left to import a ComfyUI **API-format** JSON:
+1. Pick a category and the output node.
+2. Tick the fields you want to edit on the canvas (text, numbers, switches, menus, models, seed, media).
+3. For several media inputs use a "media group"; loader nodes are duplicated and wired to match how many you connect.
+4. Use "Check mapping / graph" before generating.
+
+Node IDs can change when you replace the JSON, so re-check the mapping. Workflows and model lists are stored locally only.
+
+### Media viewer and comparison
+"Media viewer" (top left) browses everything the canvas generated and can add folders from your computer (files are never copied or moved). Click an item to see its prompt and settings; pick two images or videos to compare side by side or with a slider.
+
+## AI prompt templates
+
+- **Built-in templates** ship with the app in `backend/builtin_prompts/`.
+- **Your templates** are stored in `data/prompts/`, which is never committed or packaged.
+- Editing a built-in template saves your own copy; restoring the original text brings back the built-in. Deleting a built-in only hides it.
+- To share a template with everyone, add it to `backend/builtin_prompts/`.
+
+## Let AI tools drive the canvas
+
+Turn on **Settings → External AI API**, copy the token, and give the [skill](skills/h3-canvas-api/SKILL.md), the address `http://127.0.0.1:8766/api/automation/v1` and the token to an AI tool you trust (such as Claude Code or Codex). It can then create projects, upload media, write prompts and start generations.
+
+- The API never reveals your service keys and cannot run system commands.
+- Keep it on localhost; do not expose it to the internet.
+- Avoid editing the same project in the browser and through the API at the same time.
+
+## Files and data
+
+| Path | Contents |
 |---|---|
-| `src/`, `backend/` | React/Vite UI and FastAPI service |
-| `workflow_template.json`, `workflows/` | Sanitized runtime graphs and parameter/node registries; preserve compiler mappings |
-| `example_workflows/` | Public UI/API exports for import; node numbers may differ from runtime templates |
-| `skills/h3-canvas-api/` | Canvas automation skill |
-| `colab/`, `skills/minimax-h3-remote-skill/` | **Independent** Google Colab H3 remote tool and its agent skill; not the canvas backend |
-| `data/` | Local SQLite settings/projects/jobs, media, outputs and authentication state; NEVER publish |
+| `src/`, `backend/` | Front end (React) and back end (FastAPI) |
+| `workflows/` | The workflows the canvas runs and their field mappings |
+| `example_workflows/` | Shareable workflows to import into ComfyUI / RunningHub |
+| `colab/` | Google Colab notebooks |
+| `skills/` | Guides for AI tools |
+| `data/` | **Your** projects, media, settings, keys and templates (never share it) |
 
-The Colab notebook can be opened in Google Colab and used with its corresponding remote skill. Configure its runtime and credentials there; it does not automatically connect to the canvas.
+### Advanced: change settings the UI doesn't expose
+To swap a model or fixed value that the UI does not offer, back up and edit the matching JSON in `workflows/`, keep node IDs and links unchanged, restart the server and check the preview. `workflows/*_registry.json` lists which JSON each feature uses. Editing `example_workflows/` does not affect the canvas.
 
+## License and thanks
 
-## Node templates and director
+The code in this project is under the [MIT License](LICENSE). MIT covers this project's code only — **not** the models, nodes or generated content — and no model weights are distributed here. Check each model's license before use (several are non-commercial). Third-party notices: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and `licenses/`.
 
-Configure a video, image, music or TTS node, then expand **Node templates** to save its parameters with a name and tags. Set one default per category and manage presets from the left canvas menu. New nodes use the default; existing nodes can select a preset manually. Templates exclude scene text and media and stay in local data.
+**Models** (summary only; the official pages are authoritative)
 
-**For continuation, click Generate this segment in the director. Generate video on an individual node does not automatically continue the previous segment.** API motion-context submissions create/update a director automatically; reload the project to see it.
+| Model | License in short |
+|---|---|
+| [MiniMax H3](https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/LICENSE) | Community license with territory, commercial-use, attribution and use restrictions |
+| [SCAIL-2](https://huggingface.co/Comfy-Org/SCAIL-2) (built on Wan 2.1), [SAM 3.1](https://huggingface.co/Comfy-Org/sam3.1) | See each model card |
+| [Z-Image Turbo](https://huggingface.co/Tongyi-MAI/Z-Image-Turbo), [MOSS Image](https://openmoss.ai/MOSS-Image/), [Qwen3-TTS](https://arxiv.org/abs/2601.15621) | Apache-2.0 |
+| [FLUX.2 klein](https://help.bfl.ai/articles/7108141705-can-i-run-or-fine-tune-flux-2-klein-locally) | 4B Apache-2.0; 9B non-commercial |
+| [Anima](https://huggingface.co/circlestone-labs/Anima) | Non-commercial license |
+| [YuE2](https://huggingface.co/m-a-p/YuE2-3B/blob/main/LICENSE) | Weights CC BY-NC 4.0 (non-commercial) |
+| [Breeze TTS 2](https://huggingface.co/BreezeBlue/Breeze-TTS-2) | Code Apache-2.0; weights and outputs research / non-commercial |
+| [IndexTTS 2.5](https://huggingface.co/IndexTeam/IndexTTS-2.5) | Bilibili Model Use License Agreement |
+| Speed-up LoRAs, quantized files, encoders, VAEs | Their own upstream licenses |
 
-## Noise seeds and AI prompt files
+**Thanks to**
 
-Video advanced settings accept a **Noise seed**; choose `randomize` for a new seed on each submission, or `fixed` and enter a seed to reuse it. Results, history and directors show the actual seed, with actions to reuse it. The API accepts `spec.noise_seed` as a decimal string (0–18446744073709551615) and returns `seed` as a string to preserve integer precision. Equal seeds do not guarantee equal results across models, settings or environments. RH coins apply only to RunningHub. Local ComfyUI needs no billing fields; its displayed elapsed time includes queueing and output storage.
-
-AI writing templates come from two places. **Built-in templates** ship with the program in `backend/builtin_prompts/` (H3, images, music and TTS examples) and are read-only. **Your templates** live only in the local `data/prompts/` folder: each UTF-8 `.md` or `.txt` file is one template (filename stem = display name, full text = instructions). `data/` is never committed or packaged, so personal templates never need to be removed from Git. These are separate from workflow graphs and node parameter presets.
-
-**Save settings and templates** writes to `data/prompts/`. Editing a built-in creates a personal override with the same name; saving it back to the original text restores the built-in; deleting or renaming a built-in only hides it (`data/prompts/.hidden.json`). Previous content is kept in `data/prompts/.trash/`. You may also edit files in `data/prompts/` directly and reopen settings to reload. A stale save is rejected if files changed externally. On first start, files from the old repository-level `prompts/` folder that differ from the built-ins are copied into `data/prompts/` once; that folder is now ignored by Git. To publish a new template for everyone, add it to `backend/builtin_prompts/` instead.
-
-## Advanced: unexposed models and parameters
-
-1. Back up the JSON you will edit. All video modes now use `workflows/video_unified.json`, selected by `workflows/video_registry.json`. The older `workflow_template.json` and `video_motion_mp4.json` are retained legacy files, not the active video graphs.
-2. For images/audio, find the function's `template` in `workflows/image_registry.json` or `workflows/audio_registry.json`; audio entries without a template use `<function ID>.json`. In the runtime graph, edit the relevant loader's actual text-encoder/VAE filename or other fixed input. Compatible weights and nodes must exist on the provider. Editing `example_workflows/` alone does not change the runtime.
-3. Preserve node IDs, class types, links and input types. Exposed UI/API parameters overwrite graph defaults during compilation; change those through the UI or node presets. FLUX encoder pairing also uses image registry `model_clip`, which must be updated accordingly.
-4. A workflow replacement that changes node IDs/input names requires registry updates (including `video_registry.json` for video). Exposing new controls may require schema/compiler/UI changes. Changing only a fixed loader filename usually does not.
-5. Restart after edits. Inspect `/workflow/preview` before deciding to spend provider credits; preview does not verify remote model availability. RunningHub still needs its configured workflow ID; local ComfyUI does not. The app submits the compiled graph, so fixed inputs not overridden by the compiler use your edited runtime JSON.
-
-## License and acknowledgements
-
-Project code uses the repository's [MIT License](LICENSE). This does **not** relicense model weights, custom nodes, dependencies or outputs. Summaries below reflect upstream pages checked on 2026-10-25; exact checkpoint licenses and provider terms prevail. No weights are distributed. See [third-party notices](THIRD_PARTY_NOTICES.md) and `licenses/` for dependency notices.
-
-Thank you to the model teams, ComfyUI/custom-node maintainers, RunningHub, and the open-source UI/media community that make this project possible.
-
-| Component / model | License summary / 授權摘要 | Source |
-|---|---|---|
-| MiniMax H3 | MiniMax H3 Community License; territory, commercial-use, attribution and acceptable-use conditions apply. Not MIT/Apache. / 社群授權，含地區、商用、標示及使用限制。 | [License](https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/LICENSE) |
-| MOSS-Image | Apache-2.0 model weights; retain required notices. / 權重 Apache-2.0，保留必要聲明。 | [OpenMOSS](https://openmoss.ai/MOSS-Image/) |
-| FLUX.2 klein | 4B: Apache-2.0; 9B: FLUX Non-Commercial License, separate commercial permission may be needed. / 4B 與 9B 授權不同。 | [Black Forest Labs](https://help.bfl.ai/articles/7108141705-can-i-run-or-fine-tune-flux-2-klein-locally) |
-| Z-Image-Turbo | Apache-2.0. | [Tongyi-MAI](https://huggingface.co/Tongyi-MAI/Z-Image-Turbo) |
-| Anima | Current upstream lists CircleStone Labs Non-Commercial License; verify the exact checkpoint/version (including aesthetic derivatives). / 目前上游列非商用授權，請核對實際版本及衍生權重。 | [CircleStone Labs](https://huggingface.co/circlestone-labs/Anima) |
-| YuE2 | Weights: CC BY-NC 4.0 in the linked license; additional permissions, if any, must be checked for the exact release. / 權重為非商用授權；額外許可依實際版本確認。 | [MAP license](https://huggingface.co/m-a-p/YuE2-3B/blob/main/LICENSE) |
-| Qwen3-TTS | Apache-2.0; retain license/notice requirements. | [Qwen report](https://arxiv.org/abs/2601.15621) |
-| Breeze TTS 2 | Code Apache-2.0; weights, derivatives and self-hosted outputs subject to research/non-commercial terms. / 程式碼與權重授權不同，自架輸出亦受限制。 | [BreezeBlue](https://huggingface.co/BreezeBlue/Breeze-TTS-2) |
-| IndexTTS 2.5 | Bilibili Model Use License Agreement; not a blanket Apache/MIT grant for weights. / 權重依 Bilibili 模型使用協議。 | [IndexTeam](https://huggingface.co/IndexTeam/IndexTTS-2.5) |
-| Qwen encoders, VAEs, LoRAs, quantizations | Separate upstream/derivative licenses apply; availability in a workflow is not permission to redistribute weights. / 各別元件及衍生權重須遵守其原始授權。 | Respective model cards / 各模型卡 |
-| React, Vite, XYFlow, FastAPI, Uvicorn, Lucide | MIT / ISC / BSD-style licenses by package; retain supplied notices. / 各套件依自身授權。 | [React](https://github.com/facebook/react), [Vite](https://github.com/vitejs/vite), [XYFlow](https://github.com/xyflow/xyflow), [FastAPI](https://github.com/fastapi/fastapi), [Uvicorn](https://github.com/encode/uvicorn), [Lucide](https://github.com/lucide-icons/lucide) |
-| Mediabunny | MPL-2.0; unmodified dependency, preserve notices and applicable source obligations. / 未修改的 MPL-2.0 依賴，保留聲明與適用原始碼義務。 | [Source](https://github.com/Vanilagy/mediabunny/tree/v1.62.1) |
-| ComfyUI and custom-node authors | Separate upstream licenses; not bundled as an installed engine. / 外部引擎與節點各自授權，未隨本專案安裝包散布。 | [ComfyUI](https://github.com/Comfy-Org/ComfyUI), [RunningHub](https://www.runninghub.ai/) |
-
-Special thanks:
-
-- [KJ / ComfyUI-KJNodes](https://github.com/kijai/ComfyUI-KJNodes)
-- [T8 / comfyui-minimax-h3-audio-T8](https://github.com/T8mars/comfyui-minimax-h3-audio-T8)
-- [Motion Context / ComfyUI-H3-Motion-Context](https://github.com/NikoDemon80/ComfyUI-H3-Motion-Context)
-
-## Unified video generation
-
-Import the new `MiniMax_H3_一採保留_二採Latent放大_無限畫布.json` from `example_workflows/` into RunningHub and set its ID in the video workflow setting. Normal video, motion context, two-pass upscale, and motion context with upscale all use this **one workflow ID**. The previous separate motion ID is no longer used. Local ComfyUI needs the corresponding installed T8 nodes/models but no workflow ID.
-
-- Enable **二採放大** in advanced settings; `scale_by` defaults to 2. Remaining controls use the supplied workflow defaults, including the first-pass schedule. Expand the complete parameter groups to override them. Both saved outputs use **24 fps**.
-- Keep **同時保存一採影片** enabled to save both results; otherwise only the second-pass video is saved. The first pass still runs internally. Output assets include `generation_pass: first/second` and `output_node_id`; UI names identify the pass.
-- Generate continuations through the director's **生成此段**. Auto selection prefers the previous successful run's first-pass video, falling back to second-pass. Select a particular output when needed. Without a previous clip, both overlap trims are bypassed.
-- `audio_mode` defaults to `native`. `lock_source` and `remix_source` require a separate **drive audio** input (audio asset or connected audio node). It is not automatically added to reference-audio numbering. Both passes receive the same materials. Assign image roles explicitly: I2VA = first, L2VA = last, FL2VA = first + last, Ref2VA = reference. Invalid combinations are rejected before submission.
-- RunningHub's per-node instance override offers Standard / Plus / Ultra; an empty override inherits settings. It has no effect on local ComfyUI. Higher-resolution refinement can require substantially more VRAM.
-- Node titles are editable directly. `@` suggestions use already connected reference materials and insert at the cursor. Video mute state is retained when opening the enlarged player.
-- Release archives include the built-in templates in `backend/builtin_prompts/` only; personal templates in `data/prompts/` are never packaged.
-
-Automation clients should refresh `/catalog` and use `seed_mode`, `audio_mode`, `drive_audio_asset_id`, `two_pass`, `save_first_pass`, `two_pass_parameters`, and optional `instance_type` from the Generation schema. Two-pass defaults are in `/catalog.config.video_two_pass_parameters`. See the bundled canvas API skill for exact bindings.
-
-## Local media archive and comparison
-
-Open **素材檢視** in the upper-left navigation. Canvas-generated images, videos and music are listed automatically. Enter a folder path, or browse local drives with **選擇**, then **加入**. Subfolders are included. Media stays in place; removing a source does not delete files. Use **重新掃描** after adding files. Folder registrations are stored in local SQLite; thumbnails in `data/archive-thumbnails/`. Neither is shared in releases.
-
-Select media to preview, copy prompts, and inspect parameters or raw records. Readers cover canvas runs, same-stem Colab TXT files with `PROMPT BEGIN/END`, embedded ComfyUI prompt/workflow graphs, WebUI PNG parameters and JPEG/WebP EXIF UserComment, and music container tags. Sources remain separate when values conflict. Missing generation metadata cannot be reconstructed. ComfyUI summaries are static graph analysis, not workflow execution. Optional ffprobe provides richer stream information; bundled ffmpeg is the fallback for tags. Browser codec support determines playback availability.
-
-Choose two images/videos and press **比較**, or use the canvas toolbar's **A/B** button for project media. Switch between side-by-side and draggable wipe views, swap sides, and use the muted synchronized timeline for videos. Playback stops at the shorter clip; browser synchronization is not frame-accurate measurement. Images are fitted proportionally with letterboxing; originals are unchanged.
-
-Open Media Archive above the right-hand project generation history. It defaults to the current project and can include all projects; registered external folders are independent of project scope. Add an image/video comparison node from the canvas menu and connect sources to A and B for side-by-side or wipe preview. Audio can play from A, B, both, or neither. Keyframe modes use labeled first/last image slots with automatic roles; audio/video references remain separate and canonical Picture/Audio/Video numbering is preserved.
-
-### Canvas controls and playback
-- Shift-select ungrouped nodes and choose Group on the left toolbar. Drag the group header to move its members; arrange into a grid, collapse/expand without changing relative positions, or ungroup while preserving nodes and edges. Nested groups are not supported.
-- The connection switch hides lines without disconnecting references. Active generation nodes have a subtle blue glow.
-- Node names commit on Enter or blur; Escape cancels editing. The creation menu scrolls within the viewport.
-- Global playback volume in Settings applies to existing and new players and persists in this browser. Individual mute controls remain independent.
-- Results, assets and project lists render in batches with Load more. Generation status continues to update.
-- Humans and automation can browse/play concurrently, but avoid simultaneous edits to the same project. Automation PUT checks If-Match; browser saves still replace the canvas without full collaborative merging.
-- ChatGPT subscription image generation is not integrated: official Sign in with ChatGPT plan-usage preview explicitly excludes image generation. Codex built-in image generation does not establish a supported direct subscription API for this app: https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations .
-
-### Colab video provider (20261102)
-
-[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Isha70852/minimax-h3-infinite-canvas-wf/blob/main/colab/MiniMax_H3_MotionContext_Remote_20261102.ipynb)
-
-Both files are required; the visual ComfyUI workflow and API graph are different formats, not alternatives. Download them from `example_workflows/` (open each file on GitHub and choose Download raw file):
-
-- [MiniMax_H3_一採保留_二採Latent放大_無限畫布.json](example_workflows/MiniMax_H3_一採保留_二採Latent放大_無限畫布.json)
-- [MiniMax_H3_一採保留_二採Latent放大_無限畫布_api.json](example_workflows/MiniMax_H3_一採保留_二採Latent放大_無限畫布_api.json)
-
-The badge opens the public GitHub notebook in Colab once this version is published. Keep the notebook and both JSON files in the repository. A separate personal Drive copy is optional; use **File → Save a copy in Drive** to retain personal notebook edits. Each user runs their own runtime; this does not share your active runtime or token.
-
-Use `colab/MiniMax_H3_MotionContext_Remote_20261102.ipynb`: install dependencies/models, start ComfyUI, upload **both JSON files below** in the original-JSON / canvas API cell, then run that cell and Cell 7. Rerun both cells after updating an existing runtime.
-Set **H3_API_URL** and **H3_API_TOKEN** in canvas Settings (not the public ComfyUI UI tunnel URL), save, and select **Colab** on video nodes or video defaults. Tokens stay in the local backend and can be removed. Image, music and TTS generation do not support this provider.
-The canvas uses the existing unified video compiler and submits the complete API graph to `/prompt`, rather than the restricted `/canvas/generate` helper. First pass, second pass, reference media and director Motion Context preserve their existing behavior. Preflight `/object_info` checks installed nodes and model filenames; configure actual Colab filenames. Unexposed VAE/encoder settings still come from `workflows/video_unified.json`; no models are silently substituted or downloaded.
-Uploads use `/upload/image`, `/canvas/upload/video`, `/upload/audio`; polling uses `/history/{prompt_id}` and authenticated downloads use `/view`. This notebook adds `/object_info`, `/upload/audio`, and output-only `/view` under its existing global Bearer authentication. No WebSocket percentage updates or RH coin billing are available; elapsed time is measured by the canvas. If the tunnel/runtime disconnects, check the remote job before resubmitting. New jobs use the new configured URL; existing jobs retain their submission URL. Local mock validation is not a Colab GPU end-to-end test.
-
-Connection visibility persists in this browser. Groups can be resized in both expanded and collapsed states, with independent saved dimensions and unchanged member-relative positions.
-
-Older bridges without `/object_info` use `/health` and endpoint discovery, then let ComfyUI validate the submitted graph. Without `/view`, first/second outputs download through `/canvas/result/{prompt_id}/{first|upscaled}`. Audio references require the updated `/upload/audio` endpoint.
-
-### Named generation connections and cancellation
-Settings → Generation sources supports multiple named ComfyUI, RunningHub and Colab connections. Existing connections remain defaults for older templates. Save a source in a node template or override it on a node. Colab remains video-only. Each RunningHub source has its own key, instance size and collapsible workflow IDs. Identical IDs share one editor; enable separate editing to change individual mappings. Credentials remain local. Shared templates must select a connection available on the recipient's machine. Active sources cannot be removed or have their endpoint/credentials changed.
-
-Active video, image, music, TTS and director segments expose Stop/Cancel. Submission-in-progress waits for its remote ID before cancellation. Completion can win the race. Use a recent ComfyUI with targeted prompt_id interruption; RunningHub uses its official cancellation API and incurred usage may remain billable. Colab needs the updated original-JSON / canvas API cell plus Cell 7 for `/canvas/cancel/{prompt_id}`. Unsupported bridges show a cancellation error and keep tracking the task.
-
-### Manual sigma schedules
-Video advanced settings offer BasicScheduler (unchanged default) or ManualSigmas. ManualSigmas #358 replaces the first-pass sigma input of SamplerCustomAdvanced #125. First-pass Steps/Scheduler do not apply in manual mode; the default seven values define six intervals: `1.0, 0.972973, 0.923077, 0.8, 0.571429, 0.333333, 0.0`. Templates and director segments retain this choice; second-pass refinement planning is unchanged. The server must provide ManualSigmas (recent ComfyUI or the appropriate KJNodes version). Shared JSONs include an optional disconnected ManualSigmas node; BasicScheduler stays wired by default. Canvas compiles the selected connection automatically. Update the uploaded RunningHub workflow from example_workflows; update the source ID if creating a new workflow. Reimport both JSONs in Colab.
-
-Colab v0.5.1 removes the Cell 3-b model-default override. The “⑥ Import dual JSON” cell after Cell 5 skips UNet/LoRA checks; other model/node diagnostics only warn. ComfyUI performs validation on submission. The original Cell 6 manual panel remains. Cell 7 now registers cancellation, audio upload and output download routes; rerun the complete updated Cell 7 after updating the import cell. Cancellation failures display only a short failure message.
-
-## Motion transfer / character replacement (SCAIL-2)
-
-Add a **Motion transfer / character replacement** node from the canvas context menu, then connect a reference character image, a driving video and optionally a text node.
-
-- Modes: *animate* keeps the reference background; *replace* keeps the video background (SCAIL `replacement_mode`).
-- Length: *single* (≤81 frames) or *extend*: 81-frame chunks with a 76-frame stride and a 5-frame anchor, overlap trimmed, colour matched and joined in one API graph, following ComfyUI's official *Character Replacement (SCAIL-2 Extend)* blueprint — no loop custom nodes. Up to 6 chunks (uploads remain ≤15 s).
-- The reference image is padded (not cropped) to the output size by default so a portrait character keeps its head in a landscape frame. The video mask prompt describes the person in the drive video. Start frame, drive fps (default: the uploaded 24 fps), negative prompt, SAM3 interval, CRF and model file names are exposed too.
-- Accelerated defaults: distill LoRA 0.8, 6 steps, CFG 1, shift 5. Templates (category *motion*), ComfyUI, RunningHub (`motion_workflow_ids`) and Colab are supported.
-- Official core nodes plus VideoHelperSuite; models from Comfy-Org Hugging Face. Examples: `example_workflows/motion_scail2_*`.
-
-## Colab universal backend (20261112)
-
-`colab/H3_Canvas_Universal_Colab_20261112.ipynb` lets Colab act like RunningHub: the canvas compiles complete API graphs and the notebook only executes them. No workflow JSON upload is needed. Tick the features you need; only their node packs and models are installed (official Comfy-Org sources first, each in its ComfyUI category folder; root or per-model folders can be changed). Cell 5 starts a token-protected native bridge and a tunnel; enter `H3_API_URL` and the token in the canvas Colab source. Every node kind can then use Colab. The legacy 20261102 notebook keeps its manual UI; its dual-JSON import is now opt-in.
+- **Model teams**: MiniMax, the SCAIL-2 and Wan teams, Meta SAM, Tongyi Z-Image, Black Forest Labs, OpenMOSS, CircleStone Labs, M-A-P (YuE2), Qwen, BreezeBlue, Bilibili IndexTeam.
+- **ComfyUI and Comfy-Org** for the engine, official nodes and model packaging.
+- **Node and model authors**:
+  [T8](https://github.com/T8mars/comfyui-minimax-h3-audio-T8) (H3 audio nodes, [IndexTTS 2.5 nodes](https://github.com/T8mars/comfyui-indextts25-t8), [4-step turbo LoRA](https://huggingface.co/t8star/minimax-h3-4step-turbo-loras-comfyui-exp)),
+  [Motion Context](https://github.com/NikoDemon80/ComfyUI-H3-Motion-Context),
+  [Kijai / KJNodes](https://github.com/kijai/ComfyUI-KJNodes),
+  [VideoHelperSuite](https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite),
+  [lightx2v](https://huggingface.co/lightx2v/Minimax-h3-Turbo),
+  [LBH Latent Upscaler](https://github.com/LBH-123-AI/Comfyui_Minimax_h3_latent_Upscaler),
+  [Qwen-TTS nodes](https://github.com/flybirdxx/ComfyUI-Qwen-TTS),
+  [Breeze TTS 2 nodes](https://github.com/Saganaki22/ComfyUI-Breeze-TTS-2),
+  [ListHelper](https://github.com/dseditor/ComfyUI-ListHelper),
+  [Goohai Tools](https://github.com/goohai/Goohaitools-comfyui),
+  [MieNodes](https://github.com/MieMieeeee/ComfyUI-MieNodes),
+  [Pika H3 Flex](https://huggingface.co/Pika-Labs/Pika-H3-Flex).
+- **Services and open source**: [RunningHub](https://www.runninghub.ai/), React, Vite, XYFlow, FastAPI, Uvicorn, Lucide, Mediabunny.

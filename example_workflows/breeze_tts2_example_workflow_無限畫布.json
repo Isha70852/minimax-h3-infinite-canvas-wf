@@ -212,7 +212,7 @@
         "auto",
         "auto",
         "cuda_graphs",
-        false
+        true
       ]
     },
     {

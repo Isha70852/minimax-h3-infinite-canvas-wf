@@ -691,7 +691,7 @@
     },
     {
       "id": 8,
-      "type": "Float",
+      "type": "PrimitiveFloat",
       "pos": [
         194.52146911621094,
         254.60789489746094
@@ -719,21 +719,19 @@
           "name": "FLOAT",
           "type": "FLOAT",
           "links": [
-            7,
-            18,
-            22,
-            27,
             34
           ]
         }
       ],
       "properties": {
-        "Node name for S&R": "Float",
-        "widget_ue_connectable": {}
+        "Node name for S&R": "PrimitiveFloat",
+        "widget_ue_connectable": {},
+        "cnr_id": "comfy-core"
       },
       "widgets_values": [
         0.8000000000000002
-      ]
+      ],
+      "title": "Float"
     },
     {
       "id": 17,

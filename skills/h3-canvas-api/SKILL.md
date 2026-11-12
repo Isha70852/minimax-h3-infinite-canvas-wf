@@ -3,7 +3,7 @@ name: h3-canvas-api
 description: Operate a locally running H3 Infinite Canvas through its opt-in API to upload media, write prompts, configure workflows, and generate image, audio, video or SCAIL-2 motion-transfer segments with RunningHub, local ComfyUI or a Colab bridge. Use when the user wants an AI coding tool to operate this canvas project.
 ---
 
-# H3 Canvas API
+# 雪音畫布 Yukine Palette · Canvas API (formerly H3 Canvas)
 
 Use the user's running canvas service, normally `http://127.0.0.1:8766/api/automation/v1`. Ask the user to enable **設定 → 外部 AI 操作 API** and provide the generated token if unavailable. No Codex-specific runtime is required: any HTTP client works. Send `Authorization: Bearer TOKEN` on every API request. Keep the token in process memory/environment; do not place it in prompts, committed files, screenshots or logs. Do not read the app database to obtain credentials. Provider keys/workflow IDs remain configured by the user in the app.
 
@@ -57,7 +57,9 @@ The interface is off by default and bound to the app's localhost service. Disabl
 
 401: token missing/invalid. 403: API disabled. 409: refresh/merge the project or inspect the existing job. 422: correct the inputs from the schema and error. Failed/attention jobs must be diagnosed before any new paid submission. Report actual output duration, usage when supplied, and whether continuation was visually verified. Never call two independent generations a verified motion-context continuation.
 
-IndexTTS 2.5 supports `audio_assets:{"audio":"SPEAKER_ASSET_ID","emotion_audio":"EMOTION_ASSET_ID"}`. The legacy `audio_asset_id` still selects the speaker reference. Omit `emotion_audio` to reuse the speaker audio for emotion. For visible canvas connections use target handles `audio` and `emotion_audio`, respectively.
+IndexTTS 2.5 supports `audio_assets:{"audio":"SPEAKER_ASSET_ID","emotion_audio":"EMOTION_ASSET_ID"}`. The legacy `audio_asset_id` still selects the speaker reference. Omit `emotion_audio` to reuse the speaker audio for emotion. For visible canvas connections use target handles `audio` and `emotion_audio`, respectively. Its emotion weight is the official ComfyUI `PrimitiveFloat` node (no extra node pack).
+
+Breeze TTS 2 (`breeze_clone`, `breeze_direction`, `breeze_design`) exposes `values.download_if_missing` as the string `"true"` (default: the loader downloads missing weights on first run) or `"false"` (weights must already exist).
 
 ## Node parameter templates (v0.2)
 
@@ -130,12 +132,12 @@ Built-in video specs also accept `clip_name`, `video_vae_name`, and `audio_vae_n
 Catalog key: `config.motion_workflows` (currently `scail2`). MOTION_SPEC is `{"kind":"motion","provider":"comfyui|runninghub|colab","provider_profile_id":null,"workflow":"scail2","values":{...},"media_assets":{"reference_image":IMAGE_ASSET_ID,"drive_video":VIDEO_ASSET_ID},"text_sources":{"prompt":TEXT_NODE_ID}}`. Visible edges use targetHandle `reference_image`, `drive_video` or `prompt`; submit the same bindings in the spec.
 
 - `values.mode`: `animate` (motion transfer — keep the reference image background) or `replace` (character replacement — keep the drive video background; maps to SCAIL `replacement_mode:true`).
-- `values.length_mode`: `single` (one chunk, `frames` 17–81, 4n+1) or `extend` (long video). Extend unrolls official SCAIL-2 chunks inside one graph: 81 frames per chunk, 76-frame stride, 5-frame `previous_frames` anchor, overlap trimmed and colour-matched (`color_match`), joined with `BatchImagesNode`, audio from the drive video (`keep_audio`). `max_segments` 2–6 caps the chunk count. The backend probes the uploaded (24 fps normalized, ≤15 s) video locally; `run.compiled.segments` reports the plan.
+- `values.length_mode`: `single` (one chunk, `frames` 17–81, 4n+1) or `extend` (long video). Extend unrolls official SCAIL-2 chunks inside one graph: 81 frames per chunk, 76-frame stride, 5-frame `previous_frames` anchor, overlap trimmed and colour-matched (`color_match`), joined with `BatchImagesNode`, audio from the drive video (`keep_audio`). `max_segments` 2–6 caps the chunk count. The backend probes the uploaded (normalized to 24 fps; no length limit) video locally; `run.compiled.segments` reports the plan.
 - `reference_fit`: `pad_white` (default) / `pad_black` keep the whole reference via `ResizeAndPadImage`; `crop` centre-crops and can cut off the head when aspect ratios differ. `video_mask_prompt` describes the person in the **drive video** (e.g. `person`), `image_mask_prompt` the character in the reference; for one reference character use `max_objects:1`. `start_frame` skips the beginning of the drive video; `drive_fps` resamples it (0 = keep the uploaded 24 fps). Also exposed: `negative_prompt`, `detect_interval`, `crf`, and model file names `dpo_lora_name`, `distill_lora_name`, `text_encoder`, `vae`, `clip_vision`, `sam_model`.
 - `width`/`height` must be multiples of 32. `seed` -1 = fresh task seed. Advanced keys: `model`, `steps` (default 6), `cfg` (1), `shift` (5), `sampler`, `scheduler`, `distill_lora_strength` (0.8), `dpo_lora_strength` (1), `pose_strength/start/end`, `detection_threshold`, `max_objects`, `sort_by`, `object_indices`, `video_mask_prompt`, `image_mask_prompt`. Defaults are the accelerated recipe (lightx2v distill LoRA); there is no slow 40-step path.
 - Nodes are official ComfyUI core (`WanSCAILToVideo`, `SCAIL2ColoredMask`, `SAM3_VideoTrack`, `ColorTransfer`, `BatchImagesNode`, `ImageScale`…) plus VideoHelperSuite load/save. Models: `wan2.1_14B_SCAIL_2_int8_convrot`, SCAIL-2 DPO LoRA, lightx2v I2V distill LoRA, `umt5_xxl_fp8_e4m3fn_scaled`, `clip_vision_h`, `Wan2_1_VAE_bf16`, `sam3.1_multiplex_fp16`.
 - RunningHub uses `motion_workflow_ids.scail2` from the selected source (upload `example_workflows/motion_scail2_single_無限畫布.json` to RunningHub to obtain it). Output is one MP4 asset.
 
-## Colab universal notebook (`colab/H3_Canvas_Universal_Colab_20261112.ipynb`)
+## Colab notebook (`colab/Yukine_Palette_Colab.ipynb`)
 
 No workflow JSON is uploaded to Colab. The notebook installs only the ticked feature packs/models (official Comfy-Org Hugging Face sources first), starts ComfyUI on localhost and exposes an authenticated native bridge: `/object_info`, `/prompt`, `/history/{id}`, `/queue`, `/interrupt`, `/upload/image` (also `type=output` latents), `/canvas/upload/video`, `/upload/audio`, `/view`, `/canvas/cancel/{id}`, `/health`, `/heartbeat`, `/models`. The canvas `Colab` provider compiles the same graphs as ComfyUI and posts them there, so every node kind works when its nodes/models are installed. Preflight uses `/object_info`, so missing model files are reported before submission. The user configures `H3_API_URL` and token locally; never request or log them.

@@ -438,15 +438,14 @@ def normalize_media(path, kind):
         match = re.search(r'Duration: (\d+):(\d+):(\d+(?:\.\d+)?)', text)
         if not match:
             raise ValueError('無法讀取影片時長。')
+        # No length limit here: each workflow trims or segments what it needs.
         duration = int(match[1]) * 3600 + int(match[2]) * 60 + float(match[3])
-        if duration < 2 or duration > 15.1:
-            raise ValueError('T8 參考影片需介於 2–15 秒，請先裁切後再上傳。')
         target = path.with_name(path.stem + '_24fps.mp4')
         command = [ffmpeg, '-v', 'error', '-i', str(path), '-map', '0:v:0', '-map', '0:a?', '-vf', 'fps=24', '-c:v', 'libx264', '-crf', '18', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-movflags', '+faststart', str(target)]
     else:
         target = path.with_suffix('.normalized.wav')
         command = [ffmpeg, '-v', 'error', '-i', str(path), '-vn', '-ac', '2', '-ar', '44100', str(target)]
-    result = subprocess.run(command, capture_output=True, timeout=300, **flags)
+    result = subprocess.run(command, capture_output=True, timeout=300 if kind != 'video' else max(300, int(duration * 20)), **flags)
     if result.returncode:
         target.unlink(missing_ok=True)
         raise ValueError('素材解碼失敗：' + result.stderr.decode('utf-8', errors='replace')[-500:])
