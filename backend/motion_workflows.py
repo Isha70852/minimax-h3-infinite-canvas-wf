@@ -149,15 +149,25 @@ def compile_motion(spec, assets, filenames=None, seed=0):
     N = entry['nodes']
     run_seed = seed if values['seed'] < 0 else values['seed']
     replace = values['mode'] == 'replace'
-    graph[N['reference_scale']]['inputs'].update(width=width, height=height)
+    if values['reference_fit'] == 'crop':
+        graph[N['reference_scale']]['inputs'].update(width=width, height=height)
+    else:
+        # Keep the whole character: a centre crop of a portrait reference into a
+        # landscape frame removes the head, so the model never sees the face.
+        graph[N['reference_scale']] = {'class_type': 'ResizeAndPadImage', 'inputs': {
+            'image': graph[N['reference_scale']]['inputs']['image'], 'target_width': width, 'target_height': height,
+            'padding_color': values['reference_fit'][4:], 'interpolation': 'area'}, '_meta': {'title': 'Fit Reference'}}
     for id in (N['reference_track'], N['drive_track']):
-        graph[id]['inputs'].update(detection_threshold=values['detection_threshold'], max_objects=values['max_objects'])
+        graph[id]['inputs'].update(detection_threshold=values['detection_threshold'], max_objects=values['max_objects'], detect_interval=values['detect_interval'])
     graph[N['mask']]['inputs']['replacement_mode'] = replace
     graph[N['conditioning']]['inputs']['replacement_mode'] = replace
-    graph[N['drive_load']]['inputs'].update(custom_width=width, custom_height=height)
+    graph[N['drive_load']]['inputs'].update(custom_width=width, custom_height=height, force_rate=values['drive_fps'])
     graph[N['sampler']]['inputs']['noise_seed'] = run_seed
     info = probe_video(media['drive_video'])
-    plan = plan_segments(info['frames'], values['length_mode'], values['frames'], values['max_segments'],
+    # Uploads are normalized to 24 fps; force_rate resamples, so count frames at the new rate.
+    total = info['frames'] if not values['drive_fps'] else int(info['frames'] * values['drive_fps'] / 24)
+    if values['start_frame'] >= total - 8: raise ValueError('起始幀超過動作影片長度。')
+    plan = plan_segments(total - values['start_frame'], values['length_mode'], values['frames'], values['max_segments'],
                          entry['chunk_frames'], entry['overlap_frames'])
     stride = entry['segment_stride']
     segment = {id: copy.deepcopy(graph[id]) for id in entry['segment_nodes']}
@@ -173,7 +183,7 @@ def compile_motion(spec, assets, filenames=None, seed=0):
                     if isinstance(value, list) and len(value) == 2 and value[0] in ids:
                         clone['inputs'][name] = [ids[value[0]], value[1]]
                 graph[ids[id]] = clone
-        graph[ids[N['drive_load']]]['inputs'].update(skip_first_frames=skip, frame_load_cap=length)
+        graph[ids[N['drive_load']]]['inputs'].update(skip_first_frames=values['start_frame'] + skip, frame_load_cap=length)
         cond = graph[ids[N['conditioning']]]['inputs']
         cond['length'] = length
         decoded = [ids[N['decode']], 0]
@@ -201,6 +211,9 @@ def compile_motion(spec, assets, filenames=None, seed=0):
         if values['keep_audio'] and info['audio']:
             graph['401'] = {'class_type': 'LoadAudio', 'inputs': {'audio': values['drive_video']}, '_meta': {'title': 'Drive Audio'}}
             out['audio'] = ['401', 0]
+            if values['start_frame']:
+                graph['402'] = {'class_type': 'TrimAudioDuration', 'inputs': {'audio': ['401', 0], 'start_index': round(values['start_frame'] / (values['drive_fps'] or 24), 3), 'duration': 3600.0}, '_meta': {'title': 'Align Drive Audio'}}
+                out['audio'] = ['402', 0]
     if not values['keep_audio'] or not info['audio']:
         out.pop('audio', None)
     elif len(outputs) == 1:
@@ -212,4 +225,4 @@ def compile_motion(spec, assets, filenames=None, seed=0):
                 raise ValueError('動作遷移工作流有遺失的節點連線。')
     return {'workflow': graph, 'prompt': values['prompt'], 'mapping': mapping, 'seed': str(run_seed),
             'output_nodes': [N['output']], 'workflow_version': entry['version'],
-            'segments': [{'skip_first_frames': s, 'length': l} for s, l in plan], 'source_frames': info['frames']}
+            'segments': [{'skip_first_frames': values['start_frame'] + s, 'length': l} for s, l in plan], 'source_frames': info['frames']}

@@ -206,6 +206,7 @@ Colab v0.5.1：移除 Cell 3-b 的模型預設覆寫。Cell 5 後的「⑥ 匯�
 
 - 模式：**動作遷移**保留參考圖背景；**人物替換**保留影片背景（SCAIL `replacement_mode`）。
 - 長度：**單段**最多 81 幀；**長影片**自動分段接續——每段 81 幀、步進 76 幀，以前段最後 5 幀為錨點，去除重疊並做色彩校正後合併，保留原影片聲音。依官方 *Character Replacement (SCAIL-2 Extend)* blueprint 的做法在同一張 API 圖內展開，不需要 Mie loop 節點；段數上限 6（上傳影片仍限 15 秒）。
+- 參考圖預設「完整保留（白邊補齊）」，避免直式角色圖被裁進橫式畫面時切掉頭部；「影片中要追蹤的人」要描述動作影片裡的人（例如 person），單一角色建議最多追蹤人數設 1。另可設定起始幀、動作影片取樣 fps（預設沿用上傳時的 24 fps）、負向提示詞、SAM3 偵測間隔、輸出 CRF 與各模型檔名。
 - 預設為加速版：Distill LoRA 0.8、6 步、CFG 1、shift 5；寬高 32 的倍數。高級設定可調模型、步數、LoRA 強度、pose 強度／區間、SAM3 門檻、最多人物、排序與人物索引。
 - 可存成節點模板（分類「動作遷移」），支援 ComfyUI、RunningHub（來源設定的工作流 ID 新增「SCAIL-2 動作遷移」欄位）與 Colab。
 - 節點：ComfyUI 官方 `WanSCAILToVideo`、`SCAIL2ColoredMask`、`SAM3_VideoTrack`、`ColorTransfer`、`BatchImagesNode`，加 VideoHelperSuite 讀寫影片。需新版 ComfyUI。

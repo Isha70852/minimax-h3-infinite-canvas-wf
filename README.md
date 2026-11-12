@@ -202,6 +202,7 @@ Add a **Motion transfer / character replacement** node from the canvas context m
 
 - Modes: *animate* keeps the reference background; *replace* keeps the video background (SCAIL `replacement_mode`).
 - Length: *single* (≤81 frames) or *extend*: 81-frame chunks with a 76-frame stride and a 5-frame anchor, overlap trimmed, colour matched and joined in one API graph, following ComfyUI's official *Character Replacement (SCAIL-2 Extend)* blueprint — no loop custom nodes. Up to 6 chunks (uploads remain ≤15 s).
+- The reference image is padded (not cropped) to the output size by default so a portrait character keeps its head in a landscape frame. The video mask prompt describes the person in the drive video. Start frame, drive fps (default: the uploaded 24 fps), negative prompt, SAM3 interval, CRF and model file names are exposed too.
 - Accelerated defaults: distill LoRA 0.8, 6 steps, CFG 1, shift 5. Templates (category *motion*), ComfyUI, RunningHub (`motion_workflow_ids`) and Colab are supported.
 - Official core nodes plus VideoHelperSuite; models from Comfy-Org Hugging Face. Examples: `example_workflows/motion_scail2_*`.
 

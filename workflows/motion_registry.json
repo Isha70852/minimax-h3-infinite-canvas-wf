@@ -1,7 +1,7 @@
 {
   "scail2": {
     "name": "SCAIL-2 動作遷移／人物替換",
-    "version": 1,
+    "version": 3,
     "template": "motion_scail2.json",
     "output": "400",
     "segment_nodes": [
@@ -98,6 +98,22 @@
         "default": 896
       },
       {
+        "key": "reference_fit",
+        "label": "參考圖適配",
+        "type": "select",
+        "options": [
+          "pad_white",
+          "pad_black",
+          "crop"
+        ],
+        "option_labels": {
+          "pad_white": "完整保留（白邊補齊，建議）",
+          "pad_black": "完整保留（黑邊補齊）",
+          "crop": "置中裁切（比例不同會切掉頭或腳）"
+        },
+        "default": "pad_white"
+      },
+      {
         "key": "frames",
         "label": "幀數（4n+1）",
         "type": "integer",
@@ -108,6 +124,24 @@
         "show_when": {
           "length_mode": "single"
         }
+      },
+      {
+        "key": "start_frame",
+        "label": "從第幾幀開始（略過片頭）",
+        "type": "integer",
+        "min": 0,
+        "max": 10000,
+        "step": 1,
+        "default": 0
+      },
+      {
+        "key": "drive_fps",
+        "label": "動作影片取樣 fps（0=沿用上傳的 24 fps；16=Wan 原生節奏）",
+        "type": "integer",
+        "min": 0,
+        "max": 60,
+        "step": 1,
+        "default": 0
       },
       {
         "key": "max_segments",
@@ -123,7 +157,7 @@
       },
       {
         "key": "video_mask_prompt",
-        "label": "影片遮罩目標（SAM3）",
+        "label": "影片中要追蹤的人（SAM3，描述影片裡的人，例如 person / man）",
         "type": "string",
         "default": "person",
         "node": "11",
@@ -131,7 +165,7 @@
       },
       {
         "key": "image_mask_prompt",
-        "label": "圖片遮罩目標（SAM3）",
+        "label": "參考圖中的角色（SAM3，例如 person / fox woman）",
         "type": "string",
         "default": "person",
         "node": "12",
@@ -294,7 +328,7 @@
       },
       {
         "key": "max_objects",
-        "label": "SAM3 最多人物（0=不限）",
+        "label": "SAM3 最多追蹤人數（單一參考角色建議 1；0=不限）",
         "type": "integer",
         "min": 0,
         "max": 64,
@@ -335,6 +369,92 @@
         "show_when": {
           "length_mode": "extend"
         }
+      },
+      {
+        "key": "negative_prompt",
+        "label": "負向提示詞（CFG>1 時才有效）",
+        "type": "string",
+        "default": "",
+        "optional": true,
+        "node": "10",
+        "input": "text",
+        "advanced": true
+      },
+      {
+        "key": "detect_interval",
+        "label": "SAM3 每 N 幀偵測一次",
+        "type": "integer",
+        "min": 1,
+        "max": 30,
+        "step": 1,
+        "default": 1,
+        "advanced": true
+      },
+      {
+        "key": "crf",
+        "label": "輸出 MP4 品質 CRF（越小越好）",
+        "type": "integer",
+        "min": 0,
+        "max": 51,
+        "step": 1,
+        "default": 19,
+        "node": "400",
+        "input": "crf",
+        "advanced": true
+      },
+      {
+        "key": "dpo_lora_name",
+        "label": "DPO LoRA 檔名",
+        "type": "string",
+        "default": "wan2.1_SCAIL_2_DPO_lora_bf16.safetensors",
+        "node": "2",
+        "input": "lora_name",
+        "advanced": true
+      },
+      {
+        "key": "distill_lora_name",
+        "label": "加速 LoRA 檔名",
+        "type": "string",
+        "default": "lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors",
+        "node": "3",
+        "input": "lora_name",
+        "advanced": true
+      },
+      {
+        "key": "text_encoder",
+        "label": "Text Encoder 檔名",
+        "type": "string",
+        "default": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+        "node": "5",
+        "input": "clip_name",
+        "advanced": true
+      },
+      {
+        "key": "vae",
+        "label": "VAE 檔名",
+        "type": "string",
+        "default": "Wan2_1_VAE_bf16.safetensors",
+        "node": "6",
+        "input": "vae_name",
+        "advanced": true
+      },
+      {
+        "key": "clip_vision",
+        "label": "CLIP Vision 檔名",
+        "type": "string",
+        "default": "clip_vision_h.safetensors",
+        "node": "7",
+        "input": "clip_name",
+        "advanced": true
+      },
+      {
+        "key": "sam_model",
+        "label": "SAM3 模型檔名",
+        "type": "string",
+        "default": "sam3.1_multiplex_fp16.safetensors",
+        "node": "8",
+        "input": "ckpt_name",
+        "advanced": true
       }
     ]
   }
