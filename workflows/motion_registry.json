@@ -165,7 +165,7 @@
       },
       {
         "key": "image_mask_prompt",
-        "label": "參考圖中的角色（SAM3，例如 person / fox woman）",
+        "label": "參考圖中的角色（SAM3，例如 person）",
         "type": "string",
         "default": "person",
         "node": "12",
