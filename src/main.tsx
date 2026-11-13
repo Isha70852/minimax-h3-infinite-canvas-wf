@@ -21,7 +21,7 @@ import { createRoot } from "react-dom/client";
 function applyTheme(theme: string) {
   document.documentElement.dataset.theme = theme;
   try { localStorage.setItem("yukine-theme", theme); } catch {}
-  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#101112" : "#e0cfad");
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#101112" : "#c8bca6");
 }
 import {
   ReactFlow,
@@ -816,7 +816,7 @@ function App() {
     const spec=defaultTemplate(config,'motion',motionDefaults(d,(config?.video_defaults?.provider==='runninghub'?'runninghub':config?.video_defaults?.provider==='colab'?'colab':'comfyui')));
     const asset=source&&assets.find(a=>a.id===(source.data.asset_id||source.data.output_id));
     const field=asset&&d.fields.find((f:any)=>f.type===asset.kind);
-    setNodes(old=>[...old,{id,type:'card',position:position||flow.screenToFlowPosition({x:window.innerWidth/2,y:200}),style:{width:380,height:280},data:{kind:'motiongen',label:'動作遷移',motion_spec:field?{...spec,media_assets:{[field.key]:asset!.id}}:spec}}]);
+    setNodes(old=>[...old.map(n=>n.selected?{...n,selected:false}:n),{id,type:'card',selected:true,position:position||flow.screenToFlowPosition({x:window.innerWidth/2,y:200}),style:{width:380,height:280},data:{kind:'motiongen',label:'動作遷移',motion_spec:field?{...spec,media_assets:{[field.key]:asset!.id}}:spec}}]);
     if(field)setEdges(old=>[...old,{...makeEdge(source.id,id,asset!.id),targetHandle:field.key}]);
     setSelected(id);
   }

@@ -122,9 +122,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start.ps1
 ## AI 提示詞模板
 
 - **內建模板**放在 `backend/builtin_prompts/`，隨程式提供。
-- **你自己的模板**存在 `data/prompts/`，不會進 Git，也不會被打包分享。
-- 修改內建模板會另存一份個人版本；改回原文即恢復內建。刪除內建模板只是隱藏。
-- 想分享給所有人的模板，請放進 `backend/builtin_prompts/`。
+- **你自己的模板**存在 `data/prompts/`
 
 ## 讓 AI 工具操作畫布
 

@@ -1,13 +1,13 @@
 /* Yukine Palette (雪音畫布) theme layer.
  * Colour tokens live in theme.tokens.css (generated): the default theme is kraft
- * paper; data-theme="dark" on <html> restores the original dark palette.
+ * oat / kraft paper; data-theme="dark" on <html> restores the original dark palette.
  * Only colours change here, never layout or behaviour. */
 :root {
   --brand: #5b3f86;
   --brand-hover: #6b4c99;
-  --brand-ink: #fbf6ea;
-  --grid-dot: #c4ab82;
-  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .42 0 0 0 0 .3 0 0 0 0 .17 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --brand-ink: #f1ebdf;
+  --grid-dot: #ab9e86;
+  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .42 0 0 0 0 .3 0 0 0 0 .17 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 :root[data-theme="dark"] {
   --brand: var(--gee);
@@ -25,7 +25,7 @@ body { background: var(--g10); }
 :root:not([data-theme="dark"]) .primary:hover { background: var(--brand-hover); }
 :root:not([data-theme="dark"]) .brand-symbol { background: var(--brand); color: var(--brand-ink); }
 :root:not([data-theme="dark"]) .brand { color: var(--brand); }
-:root:not([data-theme="dark"]) .canvas-group-header { color: #fbf6ea; }
+:root:not([data-theme="dark"]) .canvas-group-header { color: #f1ebdf; }
 :root:not([data-theme="dark"]) .canvas-card,
 :root:not([data-theme="dark"]) .node-composer { box-shadow: 0 6px 18px color-mix(in srgb, var(--shade) 16%, transparent); }
 

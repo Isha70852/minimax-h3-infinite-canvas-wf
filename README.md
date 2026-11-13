@@ -122,9 +122,7 @@ Node IDs can change when you replace the JSON, so re-check the mapping. Workflow
 ## AI prompt templates
 
 - **Built-in templates** ship with the app in `backend/builtin_prompts/`.
-- **Your templates** are stored in `data/prompts/`, which is never committed or packaged.
-- Editing a built-in template saves your own copy; restoring the original text brings back the built-in. Deleting a built-in only hides it.
-- To share a template with everyone, add it to `backend/builtin_prompts/`.
+- **Your templates** are stored in `data/prompts/`.
 
 ## Let AI tools drive the canvas
 
