@@ -3,7 +3,9 @@ import {CancelRun} from './CancelRun';
 import {ProviderSelect,ProviderSettings} from './ProviderSettings';
 import {groupNodes,ungroupNodes,arrangeGroup} from './groups.mjs';
 import {usePlaybackVolume} from './playback';
+import {useMediaMuted,setMuted,useGlobalMuted,setGlobalMuted} from './mute';
 import {MediaArchive} from './MediaArchive';
+import {ModalNav} from './ModalNav';
 import {CompareView} from './MediaCompare';
 import {NodeName} from './GenerationControls';
 import {TemplateContext,TemplateBar,TemplateManager,defaultTemplate} from './NodeTemplates';
@@ -270,16 +272,12 @@ const actions = createContext<{
   editText: () => {},
   config: null, edges: [], editSpec: () => {}, pickReferences: () => {}, openAssistant: () => {}, removeReference: () => {},
 });
-const videoMute=new Map<string,boolean>();
-const muteListeners=new Set<()=>void>();
-function setVideoMute(id:string,muted:boolean){if(videoMute.get(id)===muted)return;videoMute.set(id,muted);muteListeners.forEach(fn=>fn());}
 function HoverVideo({asset, controls, hover, clickToToggle=false}: {asset:Asset;controls:boolean;hover:boolean;clickToToggle?:boolean}) {
-  const ref=useRef<HTMLVideoElement>(null), [muted,setMuted]=useState(videoMute.get(asset.id)??true);
-  useEffect(()=>{const sync=()=>setMuted(videoMute.get(asset.id)??true);muteListeners.add(sync);sync();return ()=>{muteListeners.delete(sync);};},[asset.id]);
+  const ref=useRef<HTMLVideoElement>(null), muted=useMediaMuted(asset.id);
   return <div className="hover-video nodrag nowheel" onMouseEnter={()=>{if(hover)ref.current?.play().catch(()=>{});}} onMouseLeave={()=>{if(hover)ref.current?.pause();}}>
-    <video controlsList="nofullscreen" ref={ref} src={asset.url} muted={muted} onVolumeChange={e=>{setVideoMute(asset.id,e.currentTarget.muted);}} loop={hover} controls={controls} preload="metadata" playsInline />
+    <video controlsList="nofullscreen" ref={ref} src={asset.url} muted={muted} onVolumeChange={e=>{setMuted(asset.id,e.currentTarget.muted);}} loop={hover} controls={controls} preload="metadata" playsInline />
     {clickToToggle&&<button className="video-play-surface" aria-label="播放／暫停影片" onClick={e=>{e.stopPropagation();const video=ref.current;if(video){if(video.paused)void video.play().catch(()=>{});else video.pause();}}}/>}
-    {hover&&<button className="video-mute nodrag" title={muted?'開啟影片聲音':'關閉影片聲音'} onClick={e=>{e.stopPropagation();setVideoMute(asset.id,!muted);}}>{muted?<VolumeX size={16}/>:<Volume2 size={16}/>}</button>}
+    {hover&&<button className="video-mute nodrag" title={muted?'開啟影片聲音':'關閉影片聲音'} onClick={e=>{e.stopPropagation();setMuted(asset.id,!muted);}}>{muted?<VolumeX size={16}/>:<Volume2 size={16}/>}</button>}
   </div>;
 }
 function Media({asset,controls=false,hover=false,clickToToggle=false}:{asset:Asset;controls?:boolean;hover?:boolean;clickToToggle?:boolean}) {
@@ -510,7 +508,7 @@ function App() {
   const [inspectorVisible, setInspectorVisible] = useState(false);
   const [mediaTool,setMediaTool]=useState<{mode:'crop'|'stitch'|'extract';asset?:Asset}|null>(null);
   const [libraryPanel, setLibraryPanel] = useState<{scope:string;target?:string;role?:string}|null>(null);
-  const [volume,setVolume]=usePlaybackVolume();
+  const [volume,setVolume]=usePlaybackVolume(), globalMuted=useGlobalMuted();
   const [showEdges,setShowEdges]=useState(()=>localStorage.getItem('h3-show-edges')!=='false'),[historyLimit,setHistoryLimit]=useState(12),[assetLimit,setAssetLimit]=useState(48),[projectLimit,setProjectLimit]=useState(30);
   useEffect(()=>{localStorage.setItem('h3-show-edges',String(showEdges));},[showEdges]);
   useEffect(()=>{setHistoryLimit(12);setAssetLimit(48);},[project?.id]);
@@ -1487,8 +1485,9 @@ function App() {
                   <X size={20} />
                 </button>
               </header>
-              <Media asset={modal} controls clickToToggle />
+              <Media key={modal.id} asset={modal} controls clickToToggle />
             </div>
+            <ModalNav asset={modal} nodes={nodes} assets={assets} onOpen={setModal}/>
           </div>
         )}
         {preview && (
@@ -1550,7 +1549,7 @@ function App() {
                 API Key 僅由本機後端保存與使用，不會寫入專案或工作流。
               </p>
               <ProviderSettings settings={settings} onChange={setSettings} config={config} api={api} notify={notify}/>
-              <div className="connection-block"><h3>全域播放音量</h3><label>影片／音樂音量 · {Math.round(volume*100)}%<input type="range" min={0} max={1} step={0.01} value={volume} onChange={e=>setVolume(Number(e.target.value))}/></label></div><ModelSettings settings={settings} onChange={setSettings}/>
+              <div className="connection-block"><h3>全域播放音量</h3><label>影片／音樂音量 · {Math.round(volume*100)}%<input type="range" min={0} max={1} step={0.01} value={volume} onChange={e=>setVolume(Number(e.target.value))}/></label><label className="check-row"><input type="checkbox" checked={globalMuted} onChange={e=>setGlobalMuted(e.target.checked)}/>影片、音樂預設靜音</label><p className="help">取消勾選會讓所有影片與音樂開啟聲音；之後每個節點仍可各自切換。</p></div><ModelSettings settings={settings} onChange={setSettings}/>
               <AssistantSettingsPanel api={api} notify={notify}/>
               <AutomationSettings api={api} notify={notify}/>              <VideoDefaults config={config} value={{...defaults(config),...settings.video_defaults}} onChange={(v:any)=>setSettings({...settings,video_defaults:v})}/>
               <button
