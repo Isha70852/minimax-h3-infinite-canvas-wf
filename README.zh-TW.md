@@ -132,7 +132,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start.ps1
 
 ## 讓 AI 工具操作畫布
 
-在「設定 → 外部 AI 操作 API」開啟功能並複製權杖，再把 [skill](skills/h3-canvas-api/SKILL.md)、網址 `http://127.0.0.1:8766/api/automation/v1` 和權杖交給你信任的 AI 工具（例如 Claude Code、Codex）。它就能建立專案、上傳素材、寫提示詞並送出生成。
+在「設定 → 外部 AI 操作 API」開啟功能並複製權杖，再把 [skill](skills/h3-canvas-api/SKILL.md)、網址 `http://127.0.0.1:8766/api/automation/v1` 和權杖交給你信任的 AI 工具（例如 Claude Code、Codex）。它就能建立專案、上傳素材、寫提示詞並送出生成。所有內建功能（影片、MiniMax H3 Image 文生圖／編輯、動作遷移與人物替換、音樂、語音）都能透過 API 使用，AI 可以先讀 `GET /workflows` 查看清單。
 
 - 這個 API 不會給出你的服務金鑰，也不能執行系統指令。
 - 只在本機使用，不要公開到網路上。

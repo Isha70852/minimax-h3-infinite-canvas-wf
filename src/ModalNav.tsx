@@ -37,7 +37,9 @@ export function ModalNav({asset,nodes,assets,onOpen}:{asset:Media;nodes:any[];as
     return out;
   },[currentId,nodes,byId,flow]);
   // Hand keyboard focus to the viewer's media so Space / controls work right away.
-  const focusMedia=()=>window.setTimeout(()=>{const el=['.media-modal .video-play-surface','.media-modal .audio-play','.media-modal'].map(q=>document.querySelector<HTMLElement>(q)).find(Boolean);el?.focus({preventScroll:true});},40);
+  // The automatic focus is marked so it draws no ring; once the user tabs away and back, the normal ring shows.
+  const focusMedia=()=>window.setTimeout(()=>{const el=['.media-modal .video-play-surface','.media-modal .audio-play','.media-modal'].map(q=>document.querySelector<HTMLElement>(q)).find(Boolean);if(!el)return;
+    el.dataset.autofocus='';el.addEventListener('blur',()=>{delete el.dataset.autofocus;},{once:true});el.focus({preventScroll:true});},40);
   useEffect(()=>{focusMedia();},[]);
   const go=(dir:Dir)=>{const t=targets[dir];if(!t)return;setCurrent(t.id);onOpen(t.asset);focusMedia();
     const n=flow.getInternalNode(t.id);if(n){const p=n.internals.positionAbsolute;flow.setCenter(p.x+(n.measured?.width??0)/2,p.y+(n.measured?.height??0)/2,{zoom:flow.getZoom()});}};

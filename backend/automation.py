@@ -64,9 +64,31 @@ def install(app, services):
     router.add_api_route('/node-templates/{id}',node_templates.save_template,methods=['PUT'])
     router.add_api_route('/node-templates/{id}',node_templates.delete_template,methods=['DELETE'])
 
+    def workflow_index(cfg):
+        # One explicit map of every built-in generator, so agents need not guess which config key holds it.
+        def rows(items,node_kind,spec_key,schema,extra=lambda w:{}):
+            return [{'workflow':w['id'],'name':w['name'],'node_kind':node_kind,'node_spec_key':spec_key,'request_schema':schema,
+                     'fields':[f['key'] for f in w.get('fields',[])],**extra(w)} for w in items]
+        audio=lambda kind:[w for w in cfg['audio_workflows'] if w.get('category')==kind]
+        return {
+            'note':'Built-in workflows. custom_workflows lists only user-imported packages; empty node_templates only means no saved presets.',
+            'video':[{'workflow':'unified','name':'MiniMax H3 video (T2VA/I2VA/L2VA/FL2VA/Ref2VA)','node_kind':'generation','node_spec_key':'spec','request_schema':'Generation'}],
+            'image':rows(cfg['image_workflows'],'imagegen','image_spec','ImageGeneration',lambda w:{'supports_lora':w.get('supports_lora',False),
+                        'image_inputs':[f['key'] for f in w['fields'] if f.get('type')=='image']}),
+            'motion':rows(cfg['motion_workflows'],'motiongen','motion_spec','MotionGeneration',lambda w:{'modes':next((f.get('options') for f in w['fields'] if f['key']=='mode'),None)}),
+            'music':rows(audio('music'),'music','audio_spec','AudioGeneration'),
+            'tts':rows(audio('tts'),'tts','audio_spec','AudioGeneration'),
+            'custom':[{'package_id':p.get('package_id',p.get('id')),'version':p.get('version'),'name':p.get('name'),'node_kind':'custom','node_spec_key':'custom_spec','request_schema':'CustomGeneration'} for p in cfg['custom_workflows']],
+        }
+
+    @router.get('/workflows')
+    def workflows():
+        return workflow_index(services['config']())
+
     @router.get('/catalog')
     def catalog():
-        return {'version':1,'config':services['config'](),'capabilities':services['capabilities'](),
+        cfg=services['config']()
+        return {'version':1,'workflows':workflow_index(cfg),'config':cfg,'capabilities':services['capabilities'](),
                 'schemas':{c.__name__:c.model_json_schema() for c in (services['Generation'],services['ImageGeneration'],services['AudioGeneration'],services['CustomGeneration'],services['MotionGeneration'],prompting.DraftRequest)},
                 'node_templates':node_templates.templates(), 'prompt_templates':prompting.public_settings().get('templates',[])}
 

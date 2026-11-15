@@ -1871,3 +1871,4 @@ main {
 .modal-nav.nav-up .modal-nav-thumb, .modal-nav.nav-down .modal-nav-thumb { width:22px; height:22px; border-radius:4px; }
 @media (max-width: 760px) { .modal-nav-name { display:none; } }
 .media-modal:focus { outline:none; }
+.media-modal [data-autofocus]:focus, .media-modal [data-autofocus]:focus-visible { outline:none; box-shadow:none; }

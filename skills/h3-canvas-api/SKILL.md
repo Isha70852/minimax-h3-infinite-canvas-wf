@@ -1,6 +1,6 @@
 ---
 name: h3-canvas-api
-description: Operate a locally running H3 Infinite Canvas through its opt-in API to upload media, write prompts, configure workflows, and generate image, audio, video or SCAIL-2 motion-transfer segments with RunningHub, local ComfyUI or a Colab bridge. Use when the user wants an AI coding tool to operate this canvas project.
+description: Operate a locally running H3 Infinite Canvas through its opt-in API to upload media, write prompts, configure workflows, and generate images (incl. MiniMax H3 Image text-to-image and multi-reference edit), audio, video, or SCAIL-2 motion-transfer / character-replacement clips with RunningHub, local ComfyUI or a Colab bridge. Use when the user wants an AI coding tool to operate this canvas project.
 ---
 
 # 雪音畫布 Yukine Palette · Canvas API (formerly H3 Canvas)
@@ -8,6 +8,24 @@ description: Operate a locally running H3 Infinite Canvas through its opt-in API
 Use the user's running canvas service, normally `http://127.0.0.1:8766/api/automation/v1`. Ask the user to enable **設定 → 外部 AI 操作 API** and provide the generated token if unavailable. No Codex-specific runtime is required: any HTTP client works. Send `Authorization: Bearer TOKEN` on every API request. Keep the token in process memory/environment; do not place it in prompts, committed files, screenshots or logs. Do not read the app database to obtain credentials. Provider keys/workflow IDs remain configured by the user in the app.
 
 Read `GET /catalog` first for current capabilities, workflow IDs (catalog keys, not private RunningHub IDs), field definitions/defaults, templates and JSON schemas. Read `GET /schema` for exact HTTP request schemas. Never guess a new model's fields. The base URL above already includes the version prefix.
+
+### Where the generators are listed (read this before concluding a model is missing)
+
+`GET /workflows` (also `/catalog.workflows`) is the index of every built-in generator, grouped as `video`, `image`, `motion`, `music`, `tts`, `custom`. Each row gives `workflow`, `name`, the canvas `node_kind`, the node data key that holds the spec (`node_spec_key`), the `request_schema`, and field keys; full field definitions are in `/catalog.config.image_workflows`, `.motion_workflows`, `.audio_workflows`.
+
+- **Built-in** image (MiniMax H3 Image `h3_t2i` / `h3_edit`, Moss, Z-Image, Anima, FLUX.2 Klein), motion (`scail2` with `mode:"animate"` motion transfer or `mode:"replace"` character replacement), music and TTS workflows are **not** in `config.custom_workflows`. That list contains only packages the user imported. They need no template either.
+- `node_templates` are optional saved parameter presets. An empty list does **not** mean a workflow is unavailable.
+- Do not substitute another model, for example video Ref2VA in place of an image request, because you could not find a workflow. Check `/workflows` first. If it is really absent, report that to the user.
+
+| Task | node_kind | spec key on node | spec `kind` / `workflow` |
+|---|---|---|---|
+| Video (H3) | `generation` | `spec` | Generation (no `workflow`) |
+| H3 Image text-to-image | `imagegen` | `image_spec` | `image` / `h3_t2i` |
+| H3 Image edit (1–6 refs) | `imagegen` | `image_spec` | `image` / `h3_edit` |
+| Motion transfer | `motiongen` | `motion_spec` | `motion` / `scail2`, `values.mode:"animate"` |
+| Character replacement | `motiongen` | `motion_spec` | `motion` / `scail2`, `values.mode:"replace"` |
+| Music / TTS | `music` / `tts` | `audio_spec` | `audio` / catalog key |
+| Imported package | `custom` | `custom_spec` | `custom` / `package_id`+`version` |
 
 ## Execution procedure
 
@@ -43,7 +61,15 @@ Merge the user's desired values with `/catalog.config.video_defaults` when appro
 
 Image spec uses `kind:"image"`, `provider`, `workflow`, `values`, `image_assets`, `text_sources`, plus schema-defined advanced fields. Audio spec uses `kind:"audio"`, `provider`, `workflow`, `values`, `audio_asset_id`, `text_sources`. Discover exact workflow keys and fields from the catalog; never use the private RunningHub workflow number as `workflow`.
 
-MiniMax H3 Image workflows: `h3_t2i` (text-to-image) and `h3_edit` (multi-image editing). `h3_edit` takes `image_assets` keys `image`, `image2` … `image6`, filled in order without gaps; the prompt refers to them as `<Picture 1>`, `<Picture 2>`, … `values.aspect_ratio` is `match_input` (follow reference 1, size = `ref_megapixels`) or a ResolutionSelector ratio such as `"16:9 (Widescreen)"`; `megapixels` 0.5–16 (default 4). Both accept `loras:[{name,strength,enabled}]`; the text encoder file is shared with H3 video.
+MiniMax H3 Image workflows: `h3_t2i` (text-to-image) and `h3_edit` (multi-image editing). `h3_edit` takes `image_assets` keys `image`, `image2` … `image6`, filled in order without gaps; the prompt refers to them as `<Picture 1>`, `<Picture 2>`, … `values.aspect_ratio` is `match_input` (follow reference 1, size = `ref_megapixels`) or a ResolutionSelector ratio such as `"16:9 (Widescreen)"`; `megapixels` 0.5–16 (default 4). Both accept `loras:[{name,strength,enabled}]`; the text encoder file is shared with H3 video. Advanced values: `steps` (6), `cfg` (1), `sampler`, `scheduler`, `model`, `text_encoder`; read defaults from the catalog.
+
+```json
+{"kind":"image","provider":"comfyui","workflow":"h3_t2i","values":{"prompt":"Portrait of a knight, soft window light","aspect_ratio":"2:3 (Portrait Photo)","megapixels":4},"loras":[]}
+```
+```json
+{"kind":"image","provider":"comfyui","workflow":"h3_edit","values":{"prompt":"Put the character from <Picture 1> into the room of <Picture 2>","aspect_ratio":"match_input","ref_megapixels":4},"image_assets":{"image":"CHARACTER_ASSET_ID","image2":"ROOM_ASSET_ID"},"loras":[]}
+```
+Put this spec in an `imagegen` node as `data.image_spec` and submit it to `/runs` with that node ID. Visible edges use the image key as `targetHandle` (`image`, `image2`, …). A prompt text node binds through `text_sources:{"prompt":TEXT_NODE_ID}`. Output is one image asset.
 
 ## Optional AI prompt drafting and history
 
@@ -133,7 +159,7 @@ Built-in video specs also accept `clip_name`, `video_vae_name`, and `audio_vae_n
 
 Catalog key: `config.motion_workflows` (currently `scail2`). MOTION_SPEC is `{"kind":"motion","provider":"comfyui|runninghub|colab","provider_profile_id":null,"workflow":"scail2","values":{...},"media_assets":{"reference_image":IMAGE_ASSET_ID,"drive_video":VIDEO_ASSET_ID},"text_sources":{"prompt":TEXT_NODE_ID}}`. Visible edges use targetHandle `reference_image`, `drive_video` or `prompt`; submit the same bindings in the spec.
 
-- `values.mode`: `animate` (motion transfer — keep the reference image background) or `replace` (character replacement — keep the drive video background; maps to SCAIL `replacement_mode:true`).
+- `values.mode`: `animate` (motion transfer — keep the reference image background) or `replace` (character replacement — keep the drive video background; maps to SCAIL `replacement_mode:true`). Both are the same `scail2` workflow on a `motiongen` node; there is no separate replacement workflow. Example replacement spec: `{"kind":"motion","provider":"comfyui","workflow":"scail2","values":{"mode":"replace","length_mode":"extend","prompt":"a woman dancing","video_mask_prompt":"person","max_objects":1},"media_assets":{"reference_image":IMAGE_ASSET_ID,"drive_video":VIDEO_ASSET_ID}}`.
 - `values.length_mode`: `single` (one chunk, `frames` 17–81, 4n+1) or `extend` (long video). Extend unrolls official SCAIL-2 chunks inside one graph: 81 frames per chunk, 76-frame stride, 5-frame `previous_frames` anchor, overlap trimmed and colour-matched (`color_match`), joined with `BatchImagesNode`, audio from the drive video (`keep_audio`). `max_segments` 2–6 caps the chunk count. The backend probes the uploaded (normalized to 24 fps; no length limit) video locally; `run.compiled.segments` reports the plan.
 - `reference_fit`: `pad_white` (default) / `pad_black` keep the whole reference via `ResizeAndPadImage`; `crop` centre-crops and can cut off the head when aspect ratios differ. `video_mask_prompt` describes the person in the **drive video** (e.g. `person`), `image_mask_prompt` the character in the reference; for one reference character use `max_objects:1`. `start_frame` skips the beginning of the drive video; `drive_fps` resamples it (0 = keep the uploaded 24 fps). Also exposed: `negative_prompt`, `detect_interval`, `crf`, and model file names `dpo_lora_name`, `distill_lora_name`, `text_encoder`, `vae`, `clip_vision`, `sam_model`.
 - `width`/`height` must be multiples of 32. `seed` -1 = fresh task seed. Advanced keys: `model`, `steps` (default 6), `cfg` (1), `shift` (5), `sampler`, `scheduler`, `distill_lora_strength` (0.8), `dpo_lora_strength` (1), `pose_strength/start/end`, `detection_threshold`, `max_objects`, `sort_by`, `object_indices`, `video_mask_prompt`, `image_mask_prompt`. Defaults are the accelerated recipe (lightx2v distill LoRA); there is no slow 40-step path.

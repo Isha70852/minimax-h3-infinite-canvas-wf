@@ -132,7 +132,7 @@ The "Media viewer" button at the top of the right-hand "project outputs" panel b
 
 ## Let AI tools drive the canvas
 
-Turn on **Settings → External AI API**, copy the token, and give the [skill](skills/h3-canvas-api/SKILL.md), the address `http://127.0.0.1:8766/api/automation/v1` and the token to an AI tool you trust (such as Claude Code or Codex). It can then create projects, upload media, write prompts and start generations.
+Turn on **Settings → External AI API**, copy the token, and give the [skill](skills/h3-canvas-api/SKILL.md), the address `http://127.0.0.1:8766/api/automation/v1` and the token to an AI tool you trust (such as Claude Code or Codex). It can then create projects, upload media, write prompts and start generations. Every built-in feature (video, MiniMax H3 Image text-to-image and edit, motion transfer and character replacement, music, speech) is available; the AI can read `GET /workflows` for the list.
 
 - The API never reveals your service keys and cannot run system commands.
 - Keep it on localhost; do not expose it to the internet.
