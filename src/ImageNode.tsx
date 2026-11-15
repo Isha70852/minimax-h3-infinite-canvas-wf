@@ -19,9 +19,15 @@ export function ImageNode({id,data,selected,ctx,Media,Usage}:any){
   const active=runs.some((r:any)=>['uploading','submitting','queued','running','downloading','reconnecting'].includes(r.status));
   const output=ctx.assets.find((a:any)=>a.id===data.output_id);
   const update=(change:any)=>ctx.editImage(id,{...spec,...change});
-  const inputFields=definition?.fields.filter((f:any)=>['text','image'].includes(f.type))||[];
+  // Multi-reference slots: show the next empty slot only after the previous one is filled.
+  const multiKeys=(definition?.fields||[]).filter((f:any)=>f.multi).map((f:any)=>f.key);
+  const filled=(key:string)=>!!(ctx.edges.find((e:any)=>e.target===id&&e.targetHandle===key)?.data?.asset_id||spec.image_assets?.[key]);
+  const slotVisible=(f:any)=>{const i=multiKeys.indexOf(f.key);return i<=0||filled(f.key)||filled(multiKeys[i-1]);};
+  const inputFields=definition?.fields.filter((f:any)=>['text','image'].includes(f.type)&&slotVisible(f))||[];
+  useEffect(()=>{updateInternals(id);},[id,inputFields.length,updateInternals]);
   function field(f:any){
     if(f.show_when&&!Object.entries(f.show_when).every(([k,v])=>spec.values[k]===v))return null;
+    if(!slotVisible(f))return null;
     const edge=ctx.edges.find((e:any)=>e.target===id&&e.targetHandle===f.key),source=ctx.nodes.find((n:any)=>n.id===edge?.source);
     const assetId=edge?.data?.asset_id||spec.image_assets?.[f.key]||'',asset=ctx.assets.find((a:any)=>a.id===assetId);
     const set=(value:any)=>update({values:{...spec.values,[f.key]:value}});
@@ -31,7 +37,7 @@ export function ImageNode({id,data,selected,ctx,Media,Usage}:any){
       {f.type==='text'&&<><select aria-label={f.label+'文字來源'} value={source?.id||''} onChange={e=>ctx.bindAudio(id,f.key,e.target.value)}><option value="">直接輸入</option>{ctx.nodes.filter((n:any)=>n.data.kind==='text').map((n:any)=><option key={n.id} value={n.id}>{n.data.label} · {(n.data.text||'').slice(0,35)}</option>)}</select><PromptInput rows={4} value={source?.data.text??spec.values[f.key]??''} disabled={!!source} onValueChange={set}/></>}
       {f.type==='image'&&<><select aria-label={f.label} value={assetId} onChange={e=>{ctx.bindAudio(id,f.key,'');update({image_assets:{...spec.image_assets,[f.key]:e.target.value}});}}><option value="">{f.optional?'不使用':'選擇專案圖片或連接圖片節點'}</option>{ctx.assets.filter((a:any)=>a.kind==='image'&&!a.deleted).map((a:any)=><option key={a.id} value={a.id}>{a.name}</option>)}</select>{asset&&<img className="image-input-preview" src={asset.url} alt={asset.name}/>}</>}
       {f.type==='string'&&<input aria-label={f.label} value={spec.values[f.key]??f.default} onChange={e=>set(e.target.value)}/>}
-      {f.type==='select'&&<select aria-label={f.label} value={spec.values[f.key]??f.default} onChange={e=>set(e.target.value)}>{f.options.map((v:string)=><option key={v}>{v}</option>)}</select>}
+      {f.type==='select'&&<select aria-label={f.label} value={spec.values[f.key]??f.default} onChange={e=>set(e.target.value)}>{f.options.map((v:string)=><option key={v} value={v}>{f.option_labels?.[v]||v}</option>)}</select>}
       {f.type==='boolean'&&<select value={String(spec.values[f.key]??f.default)} onChange={e=>set(e.target.value==='true')}><option value="true">True · 沿用圖片大小</option><option value="false">False · 自訂大小</option></select>}
       {['number','integer'].includes(f.type)&&<NumberInput aria-label={f.label} value={spec.values[f.key]??f.default} min={f.min} max={f.max} step={f.step||1} onValueChange={set}/>}
     </div>;

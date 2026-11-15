@@ -390,5 +390,340 @@
         ]
       }
     }
+  },
+  "h3_t2i": {
+    "name": "MiniMax H3 Image 文生圖",
+    "version": 1,
+    "template": "image_h3_t2i.json",
+    "output": "9",
+    "sampler": "38",
+    "fields": [
+      {
+        "key": "model",
+        "label": "模型檔名",
+        "type": "string",
+        "node": "29",
+        "input": "unet_name",
+        "default": "minimax_h3_image_pruned_int8_convrot.safetensors"
+      },
+      {
+        "key": "prompt",
+        "label": "正向提示詞",
+        "type": "text",
+        "node": "43",
+        "input": "value",
+        "default": ""
+      },
+      {
+        "key": "aspect_ratio",
+        "label": "比例",
+        "type": "select",
+        "node": "14",
+        "input": "aspect_ratio",
+        "default": "1:1 (Square)",
+        "options": [
+          "1:1 (Square)",
+          "3:2 (Photo)",
+          "4:3 (Standard)",
+          "16:9 (Widescreen)",
+          "21:9 (Ultrawide)",
+          "2:3 (Portrait Photo)",
+          "3:4 (Portrait Standard)",
+          "9:16 (Portrait Widescreen)"
+        ],
+        "option_labels": {
+          "1:1 (Square)": "1:1 方形",
+          "3:2 (Photo)": "3:2 橫式相片",
+          "4:3 (Standard)": "4:3 橫式",
+          "16:9 (Widescreen)": "16:9 寬螢幕",
+          "21:9 (Ultrawide)": "21:9 超寬",
+          "2:3 (Portrait Photo)": "2:3 直式相片",
+          "3:4 (Portrait Standard)": "3:4 直式",
+          "9:16 (Portrait Widescreen)": "9:16 直式寬螢幕"
+        }
+      },
+      {
+        "key": "megapixels",
+        "label": "輸出畫素（MP，建議 4–16；越大越慢、越吃顯存）",
+        "type": "number",
+        "node": "14",
+        "input": "megapixels",
+        "default": 4,
+        "min": 0.5,
+        "max": 16,
+        "step": 0.5
+      },
+      {
+        "key": "steps",
+        "label": "Steps",
+        "type": "integer",
+        "node": "38",
+        "input": "steps",
+        "default": 6,
+        "min": 1,
+        "max": 200,
+        "advanced": true
+      },
+      {
+        "key": "cfg",
+        "label": "CFG",
+        "type": "number",
+        "node": "38",
+        "input": "cfg",
+        "default": 1,
+        "min": 0,
+        "max": 100,
+        "step": 0.1,
+        "advanced": true
+      },
+      {
+        "key": "sampler",
+        "label": "Sampler",
+        "type": "string",
+        "node": "38",
+        "input": "sampler_name",
+        "default": "euler",
+        "advanced": true
+      },
+      {
+        "key": "scheduler",
+        "label": "Scheduler",
+        "type": "string",
+        "node": "38",
+        "input": "scheduler",
+        "default": "simple",
+        "advanced": true
+      },
+      {
+        "key": "text_encoder",
+        "label": "Text Encoder（與 H3 影片共用）",
+        "type": "string",
+        "node": "30",
+        "input": "clip_name",
+        "default": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "advanced": true
+      }
+    ],
+    "lora": {
+      "placeholder": "70",
+      "source": [
+        "29",
+        0
+      ]
+    }
+  },
+  "h3_edit": {
+    "name": "MiniMax H3 Image 圖片編輯（多參考圖）",
+    "version": 1,
+    "template": "image_h3_edit.json",
+    "output": "9",
+    "sampler": "38",
+    "fields": [
+      {
+        "key": "model",
+        "label": "模型檔名",
+        "type": "string",
+        "node": "29",
+        "input": "unet_name",
+        "default": "minimax_h3_image_pruned_int8_convrot.safetensors"
+      },
+      {
+        "key": "prompt",
+        "label": "正向提示詞",
+        "type": "text",
+        "node": "43",
+        "input": "value",
+        "default": ""
+      },
+      {
+        "key": "image",
+        "label": "參考圖 1（提示詞寫 <Picture 1>）",
+        "type": "image",
+        "node": "45",
+        "input": "image",
+        "default": null,
+        "multi": true
+      },
+      {
+        "key": "image2",
+        "label": "參考圖 2（可省略，提示詞寫 <Picture 2>）",
+        "type": "image",
+        "node": "45",
+        "input": "image",
+        "default": null,
+        "optional": true,
+        "multi": true
+      },
+      {
+        "key": "image3",
+        "label": "參考圖 3（可省略，提示詞寫 <Picture 3>）",
+        "type": "image",
+        "node": "45",
+        "input": "image",
+        "default": null,
+        "optional": true,
+        "multi": true
+      },
+      {
+        "key": "image4",
+        "label": "參考圖 4（可省略，提示詞寫 <Picture 4>）",
+        "type": "image",
+        "node": "45",
+        "input": "image",
+        "default": null,
+        "optional": true,
+        "multi": true
+      },
+      {
+        "key": "image5",
+        "label": "參考圖 5（可省略，提示詞寫 <Picture 5>）",
+        "type": "image",
+        "node": "45",
+        "input": "image",
+        "default": null,
+        "optional": true,
+        "multi": true
+      },
+      {
+        "key": "image6",
+        "label": "參考圖 6（可省略，提示詞寫 <Picture 6>）",
+        "type": "image",
+        "node": "45",
+        "input": "image",
+        "default": null,
+        "optional": true,
+        "multi": true
+      },
+      {
+        "key": "aspect_ratio",
+        "label": "輸出比例",
+        "type": "select",
+        "node": "63",
+        "input": "aspect_ratio",
+        "default": "match_input",
+        "options": [
+          "match_input",
+          "1:1 (Square)",
+          "3:2 (Photo)",
+          "4:3 (Standard)",
+          "16:9 (Widescreen)",
+          "21:9 (Ultrawide)",
+          "2:3 (Portrait Photo)",
+          "3:4 (Portrait Standard)",
+          "9:16 (Portrait Widescreen)"
+        ],
+        "option_labels": {
+          "match_input": "跟隨參考圖 1",
+          "1:1 (Square)": "1:1 方形",
+          "3:2 (Photo)": "3:2 橫式相片",
+          "4:3 (Standard)": "4:3 橫式",
+          "16:9 (Widescreen)": "16:9 寬螢幕",
+          "21:9 (Ultrawide)": "21:9 超寬",
+          "2:3 (Portrait Photo)": "2:3 直式相片",
+          "3:4 (Portrait Standard)": "3:4 直式",
+          "9:16 (Portrait Widescreen)": "9:16 直式寬螢幕"
+        }
+      },
+      {
+        "key": "megapixels",
+        "label": "輸出畫素（MP，建議 4–16；越大越慢、越吃顯存）",
+        "type": "number",
+        "node": "63",
+        "input": "megapixels",
+        "default": 4,
+        "min": 0.5,
+        "max": 16,
+        "step": 0.5
+      },
+      {
+        "key": "ref_megapixels",
+        "label": "參考圖縮放（MP；跟隨參考圖 1 時也就是輸出大小）",
+        "type": "number",
+        "node": "56",
+        "input": "resize_type.megapixels",
+        "default": 4,
+        "min": 0.5,
+        "max": 16,
+        "step": 0.5
+      },
+      {
+        "key": "steps",
+        "label": "Steps",
+        "type": "integer",
+        "node": "38",
+        "input": "steps",
+        "default": 6,
+        "min": 1,
+        "max": 200,
+        "advanced": true
+      },
+      {
+        "key": "cfg",
+        "label": "CFG",
+        "type": "number",
+        "node": "38",
+        "input": "cfg",
+        "default": 1,
+        "min": 0,
+        "max": 100,
+        "step": 0.1,
+        "advanced": true
+      },
+      {
+        "key": "sampler",
+        "label": "Sampler",
+        "type": "string",
+        "node": "38",
+        "input": "sampler_name",
+        "default": "euler",
+        "advanced": true
+      },
+      {
+        "key": "scheduler",
+        "label": "Scheduler",
+        "type": "string",
+        "node": "38",
+        "input": "scheduler",
+        "default": "simple",
+        "advanced": true
+      },
+      {
+        "key": "text_encoder",
+        "label": "Text Encoder（與 H3 影片共用）",
+        "type": "string",
+        "node": "30",
+        "input": "clip_name",
+        "default": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "advanced": true
+      }
+    ],
+    "multi_image": {
+      "node": "32",
+      "input": "images.image_{i}",
+      "chain": [
+        "45",
+        "56",
+        "48"
+      ],
+      "load": "45",
+      "output": "48"
+    },
+    "match_input": {
+      "field": "aspect_ratio",
+      "value": "match_input",
+      "image": [
+        "48",
+        0
+      ],
+      "node": "32",
+      "remove": "63"
+    },
+    "lora": {
+      "placeholder": "70",
+      "source": [
+        "29",
+        0
+      ]
+    }
   }
 }

@@ -12,7 +12,7 @@ The canvas contains no AI models itself. Generation runs on the service you choo
 |---|---|
 | Video | MiniMax H3: text-to-video, reference-to-video, first/last frame, second-pass upscaling, and a "director" that continues from the previous clip |
 | Motion transfer | SCAIL-2: animate a reference character with a video's motion, or replace the people in a video with your character |
-| Images | Z-Image Turbo, FLUX.2 klein image editing, MOSS Image, Anima |
+| Images | MiniMax H3 Image text-to-image / multi-image editing, Z-Image Turbo, FLUX.2 klein image editing, MOSS Image, Anima |
 | Music & speech | YuE2 music, Qwen3 TTS, IndexTTS 2.5, Breeze TTS 2 |
 | Custom workflows | Import your own ComfyUI API workflows and choose which fields to edit on the canvas |
 | Helpers | AI prompt assistant, media library, media viewer with A/B compare, trimming, audio extraction, storyboard stitching, groups |
@@ -91,6 +91,12 @@ Tips:
 - Image roles must match the mode: first frame → first, last frame → last, reference image → reference.
 - Uploaded videos are converted to 24 fps. There is no length limit; each workflow trims or splits what it needs.
 
+### Images (MiniMax H3 Image)
+- In an image generation node, set "Feature" to **MiniMax H3 Image text-to-image** or **image editing (multiple references)**.
+- Editing takes up to 6 reference images: the next slot appears once the previous one is filled. Refer to them in the prompt as `<Picture 1>`, `<Picture 2>`, …
+- Output aspect can follow reference 1 or use a fixed ratio. 4–16 MP is recommended; larger is slower and needs more VRAM.
+- "Advanced" adds LoRAs and Steps/CFG. The text encoder is the same file the H3 video workflows use.
+
 ### Motion transfer / character replacement (SCAIL-2)
 Right-click → "Motion transfer / character replacement", then connect one **reference character image** and one **motion video**.
 
@@ -117,7 +123,7 @@ Use **Workflows** on the left to import a ComfyUI **API-format** JSON:
 Node IDs can change when you replace the JSON, so re-check the mapping. Workflows and model lists are stored locally only.
 
 ### Media viewer and comparison
-"Media viewer" (top left) browses everything the canvas generated and can add folders from your computer (files are never copied or moved). Click an item to see its prompt and settings; pick two images or videos to compare side by side or with a slider.
+The "Media viewer" button at the top of the right-hand "project outputs" panel browses everything the canvas generated and can add folders from your computer (files are never copied or moved). Click an item to see its prompt and settings; pick two images or videos to compare side by side or with a slider.
 
 ## AI prompt templates
 
@@ -154,7 +160,7 @@ The code in this project is under the [MIT License](LICENSE). MIT covers this pr
 
 | Model | License in short |
 |---|---|
-| [MiniMax H3](https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/LICENSE) | Community license with territory, commercial-use, attribution and use restrictions |
+| [MiniMax H3](https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/LICENSE), [MiniMax H3 Image](https://huggingface.co/Comfy-Org/MiniMax-H3-Image) | Community license with territory, commercial-use, attribution and use restrictions (check the H3 Image model card) |
 | [SCAIL-2](https://huggingface.co/Comfy-Org/SCAIL-2) (built on Wan 2.1), [SAM 3.1](https://huggingface.co/Comfy-Org/sam3.1) | See each model card |
 | [Z-Image Turbo](https://huggingface.co/Tongyi-MAI/Z-Image-Turbo), [MOSS Image](https://openmoss.ai/MOSS-Image/), [Qwen3-TTS](https://arxiv.org/abs/2601.15621) | Apache-2.0 |
 | [FLUX.2 klein](https://help.bfl.ai/articles/7108141705-can-i-run-or-fine-tune-flux-2-klein-locally) | 4B Apache-2.0; 9B non-commercial |

@@ -43,6 +43,8 @@ Merge the user's desired values with `/catalog.config.video_defaults` when appro
 
 Image spec uses `kind:"image"`, `provider`, `workflow`, `values`, `image_assets`, `text_sources`, plus schema-defined advanced fields. Audio spec uses `kind:"audio"`, `provider`, `workflow`, `values`, `audio_asset_id`, `text_sources`. Discover exact workflow keys and fields from the catalog; never use the private RunningHub workflow number as `workflow`.
 
+MiniMax H3 Image workflows: `h3_t2i` (text-to-image) and `h3_edit` (multi-image editing). `h3_edit` takes `image_assets` keys `image`, `image2` … `image6`, filled in order without gaps; the prompt refers to them as `<Picture 1>`, `<Picture 2>`, … `values.aspect_ratio` is `match_input` (follow reference 1, size = `ref_megapixels`) or a ResolutionSelector ratio such as `"16:9 (Widescreen)"`; `megapixels` 0.5–16 (default 4). Both accept `loras:[{name,strength,enabled}]`; the text encoder file is shared with H3 video.
+
 ## Optional AI prompt drafting and history
 
 `POST /prompt-drafts` accepts the `DraftRequest` schema: `request_id`, `project_id`, `node_id`, `target_type` (`text`/`video`), `requirement`, `spec` (Generation schema), `template_mode` (`saved`/`custom`/`none`/`inherit`), optional `template_id`, `custom_template`, `material_notes`, `ending_notes`, `history_ids`, `history_include_templates`.

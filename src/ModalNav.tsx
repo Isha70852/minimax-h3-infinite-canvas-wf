@@ -36,16 +36,19 @@ export function ModalNav({asset,nodes,assets,onOpen}:{asset:Media;nodes:any[];as
     });
     return out;
   },[currentId,nodes,byId,flow]);
-  const go=(dir:Dir)=>{const t=targets[dir];if(!t)return;setCurrent(t.id);onOpen(t.asset);
+  // Hand keyboard focus to the viewer's media so Space / controls work right away.
+  const focusMedia=()=>window.setTimeout(()=>{const el=['.media-modal .video-play-surface','.media-modal .audio-play','.media-modal'].map(q=>document.querySelector<HTMLElement>(q)).find(Boolean);el?.focus({preventScroll:true});},40);
+  useEffect(()=>{focusMedia();},[]);
+  const go=(dir:Dir)=>{const t=targets[dir];if(!t)return;setCurrent(t.id);onOpen(t.asset);focusMedia();
     const n=flow.getInternalNode(t.id);if(n){const p=n.internals.positionAbsolute;flow.setCenter(p.x+(n.measured?.width??0)/2,p.y+(n.measured?.height??0)/2,{zoom:flow.getZoom()});}};
   useEffect(()=>{
     const onKey=(e:KeyboardEvent)=>{const dir=KEYS[e.key];if(!dir||e.altKey||e.ctrlKey||e.metaKey)return;
-      const el=e.target as HTMLElement|null;if(el?.closest?.('input,textarea,select,video,audio,[contenteditable="true"]'))return;
+      const el=e.target as HTMLElement|null;if(el?.closest?.('input,textarea,select,[contenteditable="true"]'))return;
       if(!targets[dir])return;e.preventDefault();e.stopPropagation();go(dir);};
     window.addEventListener('keydown',onKey,true);return ()=>window.removeEventListener('keydown',onKey,true);
   });
   return <>{(Object.keys(VEC) as Dir[]).map(dir=>{const t=targets[dir];if(!t)return null;const Icon=ICON[dir];
-    return <button key={dir} className={'modal-nav nav-'+dir} title={`${LABEL[dir]}方節點：${t.asset.name}（方向鍵）`} aria-label={`前往${LABEL[dir]}方節點 ${t.asset.name}`} onClick={e=>{e.stopPropagation();go(dir);}}>
+    return <button key={dir} className={'modal-nav nav-'+dir} title={`${LABEL[dir]}方節點：${t.asset.name}（方向鍵）`} aria-label={`前往${LABEL[dir]}方節點 ${t.asset.name}`} onMouseDown={e=>e.preventDefault()} onClick={e=>{e.stopPropagation();go(dir);}}>
       <Icon size={18}/>
       <span className="modal-nav-thumb">{t.asset.kind==='image'?<img src={t.asset.url} alt="" loading="lazy" draggable={false}/>:t.asset.kind==='video'?<video src={t.asset.url+'#t=0.1'} muted preload="metadata" playsInline/>:<Music2 size={16}/>}</span>
       <span className="modal-nav-name">{t.asset.name}</span>

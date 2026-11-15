@@ -1472,6 +1472,7 @@ function App() {
           <div className="modal-overlay" onClick={() => setModal(null)}>
             <div
               className="media-modal"
+              tabIndex={-1}
               role="dialog"
               aria-label="素材放大預覽"
               onClick={(e) => e.stopPropagation()}

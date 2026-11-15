@@ -12,7 +12,7 @@
 |---|---|
 | 影片 | MiniMax H3：文字生影片、參考圖生影片、首尾幀、二採放大，以及接續上一段影片的「導演台」 |
 | 動作遷移 | SCAIL-2：讓參考角色照著影片的動作動起來，或把影片裡的人換成你的角色 |
-| 圖片 | Z-Image Turbo、FLUX.2 klein 圖片編輯、MOSS Image、Anima |
+| 圖片 | MiniMax H3 Image 文生圖／多圖編輯、Z-Image Turbo、FLUX.2 klein 圖片編輯、MOSS Image、Anima |
 | 音樂／語音 | YuE2 音樂、Qwen3 TTS、IndexTTS 2.5、Breeze TTS 2 |
 | 自訂工作流 | 匯入自己的 ComfyUI API 工作流，選擇要在畫布上調整的欄位 |
 | 輔助工具 | AI 提示詞助手、素材庫、素材檢視與 A/B 比較、裁切、抽取聲音、分鏡拼圖、群組 |
@@ -91,6 +91,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start.ps1
 - 圖片用途要對應模式：首幀接 first、尾幀接 last、參考圖接 reference。
 - 上傳影片會自動轉成 24 fps，長度不限制，由各工作流自行裁切或分段。
 
+### 圖片（MiniMax H3 Image）
+- 在圖片生成節點的「功能」選 **MiniMax H3 Image 文生圖** 或 **圖片編輯（多參考圖）**。
+- 圖片編輯最多可放 6 張參考圖：填好一張才會出現下一格；提示詞用 `<Picture 1>`、`<Picture 2>`… 指定是哪一張。
+- 輸出比例可選「跟隨參考圖 1」或固定比例；畫素建議 4–16 MP，越大越慢、越吃顯存。
+- 「高級功能」可加 LoRA、調 Steps／CFG 等。Text Encoder 與 H3 影片共用同一個檔案。
+
 ### 動作遷移／人物替換（SCAIL-2）
 右鍵新增「動作遷移 / 人物替換」，連接一張**參考角色圖**和一段**動作影片**。
 
@@ -117,7 +123,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start.ps1
 更換 JSON 後節點編號可能改變，請重新確認映射。工作流與模型清單只存在本機。
 
 ### 素材檢視與比較
-左上「素材檢視」可瀏覽畫布生成的內容，也能加入電腦上的資料夾（不會複製或移動檔案）。點素材可查看提示詞和參數；選兩個圖片／影片可並排或拖曳比較。
+右側「專案生成內容」面板上方的「素材檢視」按鈕可瀏覽畫布生成的內容，也能加入電腦上的資料夾（不會複製或移動檔案）。點素材可查看提示詞和參數；選兩個圖片／影片可並排或拖曳比較。
 
 ## AI 提示詞模板
 
@@ -154,7 +160,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start.ps1
 
 | 模型 | 授權重點 |
 |---|---|
-| [MiniMax H3](https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/LICENSE) | 社群授權，有地區、商用、標示與使用限制 |
+| [MiniMax H3](https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/LICENSE)、[MiniMax H3 Image](https://huggingface.co/Comfy-Org/MiniMax-H3-Image) | 社群授權，有地區、商用、標示與使用限制（H3 Image 請以其模型卡為準） |
 | [SCAIL-2](https://huggingface.co/Comfy-Org/SCAIL-2)（Wan 2.1 為基底）、[SAM 3.1](https://huggingface.co/Comfy-Org/sam3.1) | 依各模型卡授權 |
 | [Z-Image Turbo](https://huggingface.co/Tongyi-MAI/Z-Image-Turbo)、[MOSS Image](https://openmoss.ai/MOSS-Image/)、[Qwen3-TTS](https://arxiv.org/abs/2601.15621) | Apache-2.0 |
 | [FLUX.2 klein](https://help.bfl.ai/articles/7108141705-can-i-run-or-fine-tune-flux-2-klein-locally) | 4B 為 Apache-2.0；9B 為非商用 |

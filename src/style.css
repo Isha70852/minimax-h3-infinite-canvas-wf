@@ -1870,3 +1870,4 @@ main {
 .modal-nav.nav-up { top:3px; } .modal-nav.nav-down { bottom:3px; }
 .modal-nav.nav-up .modal-nav-thumb, .modal-nav.nav-down .modal-nav-thumb { width:22px; height:22px; border-radius:4px; }
 @media (max-width: 760px) { .modal-nav-name { display:none; } }
+.media-modal:focus { outline:none; }
