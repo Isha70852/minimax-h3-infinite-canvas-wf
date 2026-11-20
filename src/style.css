@@ -1872,3 +1872,60 @@ main {
 @media (max-width: 760px) { .modal-nav-name { display:none; } }
 .media-modal:focus { outline:none; }
 .media-modal [data-autofocus]:focus, .media-modal [data-autofocus]:focus-visible { outline:none; box-shadow:none; }
+/* Custom overview map (CanvasMiniMap): nodes keep at least two thirds of the panel. */
+.canvas-minimap { background: var(--xy-minimap-background-color); padding: 0; margin: 0; }
+.canvas-minimap svg { display:block; cursor: pointer; touch-action: none; }
+.canvas-minimap-node { fill: var(--g66); }
+.canvas-minimap-node.gen { fill: var(--gdd); }
+.canvas-minimap-node.group { fill: none; stroke: var(--g66); stroke-width: 1px; vector-effect: non-scaling-stroke; }
+.canvas-minimap-mask { fill: color-mix(in srgb, var(--g10) 79%, transparent); pointer-events: none; }
+.canvas-minimap-view { stroke: var(--gac); stroke-width: 1px; pointer-events: none; }
+
+/* ---------------------------------------------------------------------------
+   Ivory paper (default light theme). Same layout; softer misty-cream canvas,
+   ivory panels with a fine inner rule and small diamond corner marks, charcoal
+   pill actions and a gold selection glow. The dark theme is untouched.
+   --------------------------------------------------------------------------- */
+:root:not([data-theme="dark"]) {
+  --paper-rule: color-mix(in srgb, var(--g66) 28%, transparent);
+  --paper-gold: #c9a24a;
+  --paper-glow: color-mix(in srgb, #e8c35a 45%, transparent);
+}
+:root:not([data-theme="dark"]) .react-flow { background-color: var(--g10); }
+/* Fine inner rule like a mounted sheet of paper. */
+:root:not([data-theme="dark"]) .dialog,
+:root:not([data-theme="dark"]) .canvas-toolbar,
+:root:not([data-theme="dark"]) .create-menu,
+:root:not([data-theme="dark"]) .node-composer,
+:root:not([data-theme="dark"]) .canvas-card.is-selected {
+  box-shadow: inset 0 0 0 3px var(--g23), inset 0 0 0 4px var(--paper-rule), 0 14px 36px color-mix(in srgb, var(--shade) 16%, transparent);
+}
+:root:not([data-theme="dark"]) .dialog { border-color: var(--g4d); }
+:root:not([data-theme="dark"]) .inspector { background: var(--g1d); box-shadow: inset 4px 0 0 var(--g20), inset 5px 0 0 var(--paper-rule); }
+/* Small diamond marks on the corners of dialogs. */
+:root:not([data-theme="dark"]) .dialog { position: relative; }
+:root:not([data-theme="dark"]) .dialog::before,
+:root:not([data-theme="dark"]) .dialog::after {
+  content: ""; position: absolute; width: 7px; height: 7px; transform: rotate(45deg);
+  background: var(--g23); border: 1px solid var(--g66); pointer-events: none;
+}
+:root:not([data-theme="dark"]) .dialog::before { top: 6px; left: 6px; }
+:root:not([data-theme="dark"]) .dialog::after { bottom: 6px; right: 6px; }
+/* Charcoal pill actions. */
+:root:not([data-theme="dark"]) .primary {
+  border-radius: 999px; background: var(--gee); color: var(--g23); border-color: var(--gff);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, white 12%, transparent);
+}
+:root:not([data-theme="dark"]) .primary:hover { background: var(--gff); }
+:root:not([data-theme="dark"]) .composer-modes button.active,
+:root:not([data-theme="dark"]) .storyboard-picker button.selected { border-color: var(--paper-gold); box-shadow: 0 0 0 2px var(--paper-glow); }
+/* Gold glow for the selected node, like a picked item. */
+:root:not([data-theme="dark"]) .canvas-card.is-selected {
+  border-color: var(--paper-gold);
+  box-shadow: 0 0 0 2px var(--paper-glow), inset 0 0 0 3px var(--g20), inset 0 0 0 4px var(--paper-rule), 0 14px 36px color-mix(in srgb, var(--shade) 16%, transparent);
+}
+:root:not([data-theme="dark"]) input:focus,
+:root:not([data-theme="dark"]) select:focus,
+:root:not([data-theme="dark"]) textarea:focus { border-color: var(--paper-gold); box-shadow: 0 0 0 2px var(--paper-glow); }
+:root:not([data-theme="dark"]) .canvas-toolbar { border-radius: 26px; background: color-mix(in srgb, var(--g23) 95%, transparent); }
+:root:not([data-theme="dark"]) .react-flow__minimap { border-color: var(--g4d); box-shadow: inset 0 0 0 2px var(--g20), inset 0 0 0 3px var(--paper-rule), 0 6px 20px color-mix(in srgb, var(--shade) 14%, transparent); }

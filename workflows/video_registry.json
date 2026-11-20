@@ -37,7 +37,9 @@
     "manual_sigmas": "358",
     "clip": "128",
     "video_vae": "119",
-    "audio_vae": "120"
+    "audio_vae": "120",
+    "hyperflow_loader": "359",
+    "hyperflow_sigmas": "360"
   },
   "fields": {
     "model": [

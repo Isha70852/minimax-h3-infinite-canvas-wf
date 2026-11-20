@@ -1,13 +1,13 @@
 /* Yukine Palette (雪音畫布) theme layer.
- * Colour tokens live in theme.tokens.css (generated): the default theme is kraft
- * oat / kraft paper; data-theme="dark" on <html> restores the original dark palette.
+ * Colour tokens live in theme.tokens.css (generated): the default theme is ivory
+ * paper (misty cream canvas, charcoal ink, gold highlights); data-theme="dark" on <html> restores the original dark palette.
  * Only colours change here, never layout or behaviour. */
 :root {
-  --brand: #5b3f86;
-  --brand-hover: #6b4c99;
-  --brand-ink: #f1ebdf;
-  --grid-dot: #ab9e86;
-  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .42 0 0 0 0 .3 0 0 0 0 .17 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --brand: #33302d;
+  --brand-hover: #22201e;
+  --brand-ink: #f8f6f0;
+  --grid-dot: #cbc3b4;
+  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .4 0 0 0 0 .32 0 0 0 .035 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 :root[data-theme="dark"] {
   --brand: var(--gee);
@@ -18,14 +18,14 @@
 }
 body { background: var(--g10); }
 
-/* Kraft paper: subtle fibre grain on the canvas, purple ink accents from the logo. */
-:root:not([data-theme="dark"]) .react-flow { background-image: var(--paper-grain); }
+/* Ivory paper: faint grain over the misty canvas wash (style.css), charcoal ink with gold accents. */
+:root:not([data-theme="dark"]) .react-flow { background-image: var(--paper-grain), radial-gradient(60% 50% at 12% 18%, color-mix(in srgb, #cfd9c2 35%, transparent), transparent 70%), radial-gradient(55% 45% at 88% 85%, color-mix(in srgb, #e9dcc0 45%, transparent), transparent 70%); }
 :root:not([data-theme="dark"]) .primary,
 :root:not([data-theme="dark"]) .dialog > .primary { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); }
 :root:not([data-theme="dark"]) .primary:hover { background: var(--brand-hover); }
-:root:not([data-theme="dark"]) .brand-symbol { background: var(--brand); color: var(--brand-ink); }
+:root:not([data-theme="dark"]) .brand-symbol { background: var(--brand); color: var(--brand-ink); box-shadow: inset 0 0 0 2px var(--brand), inset 0 0 0 3px color-mix(in srgb, #e8c35a 70%, transparent); }
 :root:not([data-theme="dark"]) .brand { color: var(--brand); }
-:root:not([data-theme="dark"]) .canvas-group-header { color: #f1ebdf; }
+:root:not([data-theme="dark"]) .canvas-group-header { color: #f8f6f0; }
 :root:not([data-theme="dark"]) .canvas-card,
 :root:not([data-theme="dark"]) .node-composer { box-shadow: 0 6px 18px color-mix(in srgb, var(--shade) 16%, transparent); }
 
@@ -40,4 +40,4 @@ body { background: var(--g10); }
 @media (max-width: 760px) { .brand-text small { display: none; } }
 
 /* Native form controls (sliders, checkboxes) follow the palette. */
-:root:not([data-theme="dark"]) { accent-color: var(--brand); }
+:root:not([data-theme="dark"]) { accent-color: #a8862f; }

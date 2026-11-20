@@ -5,6 +5,7 @@ import {groupNodes,ungroupNodes,arrangeGroup} from './groups.mjs';
 import {usePlaybackVolume} from './playback';
 import {useMediaMuted,setMuted,useGlobalMuted,setGlobalMuted} from './mute';
 import {MediaArchive} from './MediaArchive';
+import {CanvasMiniMap} from "./CanvasMiniMap";
 import {ModalNav} from './ModalNav';
 import {CompareView} from './MediaCompare';
 import {NodeName} from './GenerationControls';
@@ -29,7 +30,6 @@ import {
   ReactFlow,
   ReactFlowProvider,
   Background,
-  MiniMap,
   NodeResizer,
   Controls,
   Handle,
@@ -102,7 +102,7 @@ import {MotionNode,motionDefaults} from "./MotionNode";
 import {AssistantSettingsPanel} from "./AssistantSettingsPanel";
 import {DirectorNode} from './DirectorNode';
 import {AudioNode} from "./AudioNode";
-import {AdvancedSettings, NumberInput, PromptInput, ModelSettings, VideoDefaults, modelSelection} from "./GenerationControls";
+import {AdvancedSettings, NumberInput, PromptInput, ModelSettings, VideoDefaults, modelSelection, EngineSelect, VideoModelField} from "./GenerationControls";
 
 type Asset = {
   id: string;
@@ -114,13 +114,18 @@ type Asset = {
   favorite?: boolean;
   use_count?: number;
 };
-type Config = { custom_workflows?:any[];custom_categories?:any[];custom_models?:any;custom_presets?:any[]; provider_profiles?:any[]; node_templates?: any[]; models: string[]; loras: string[]; aspects: string[]; model_profiles?: any[]; audio_workflows?: any[]; image_workflows?: any[]; motion_workflows?: any[]; video_defaults?: Partial<Spec> };
+type Config = { hyperflow_models?: string[]; custom_workflows?:any[];custom_categories?:any[];custom_models?:any;custom_presets?:any[]; provider_profiles?:any[]; node_templates?: any[]; models: string[]; loras: string[]; aspects: string[]; model_profiles?: any[]; audio_workflows?: any[]; image_workflows?: any[]; motion_workflows?: any[]; video_defaults?: Partial<Spec> };
 type Spec = {
   provider: string;
   provider_profile_id?: string | null;
   prompt: string;
   mode: "T2VA" | "I2VA" | "L2VA" | "FL2VA" | "Ref2VA";
   sigma_mode?: "scheduler" | "manual";
+  engine?: "standard" | "hyperflow";
+  hyperflow_model?: string;
+  hyperflow_steps?: 4 | 6 | 8;
+  hyperflow_weights_in?: "auto" | "ram" | "disk";
+  accel_lora_enabled?: boolean | null;
   manual_sigmas?: string;
   seed_mode?: "fixed"|"randomize";
   audio_mode?:string;
@@ -403,7 +408,8 @@ function CanvasCard({ id, data, selected }: NodeProps<CardNode>) {
         <PromptInput mentions={referenceRows(id,ctx.edges,ctx.assets)} disabled={!!promptSource} aria-label="節點提示詞" placeholder="描述想生成的內容，使用 @圖片1 引用素材…" value={promptSource?.data.text??data.spec.prompt} onValueChange={(value:string)=>ctx.editSpec(id,{prompt:value})}/>
         <div className="composer-fields">
           <ProviderSelect config={ctx.config} spec={data.spec} video onChange={(change:any)=>ctx.editSpec(id,change)}/>
-          <select aria-label="節點模型" title={data.spec.model} value={data.spec.model} onChange={e=>ctx.editSpec(id,modelSelection(e.target.value,ctx.config))}>{Array.from(new Set([...ctx.config.models,data.spec.model])).map(m=><option key={m} value={m}>{m}</option>)}</select>
+          <EngineSelect spec={data.spec} onChange={(change:any)=>ctx.editSpec(id,change)}/>
+          <VideoModelField spec={data.spec} config={ctx.config} onChange={(change:any)=>ctx.editSpec(id,change)}/>
 
           <select aria-label="節點畫面比例" value={data.spec.aspect_ratio} onChange={e=>ctx.editSpec(id,{aspect_ratio:e.target.value})}>{ctx.config.aspects.map(m=><option key={m} value={m}>{m}</option>)}</select>
           <select aria-label="節點大小" value={data.spec.megapixels} onChange={e=>ctx.editSpec(id,{megapixels:Number(e.target.value)})}>{megapixelOptions.map(m=><option key={m} value={m}>{resolutionLabel(m,data.spec!.aspect_ratio)}</option>)}</select>
@@ -418,7 +424,7 @@ function CanvasCard({ id, data, selected }: NodeProps<CardNode>) {
             <p>{new Date(r.created_at*1000).toLocaleString('zh-TW')} · {r.stage}</p>
             {r.outputs.map(a=><div key={a.id}><p>{a.name}</p><Media asset={a} controls/><div className="template-actions"><button onClick={()=>ctx.preview(a)}>放大查看</button><button onClick={()=>ctx.audioOutput(id,a.id)}>顯示此版本</button><a href={a.url} download={a.name}>下載</a></div></div>)}
             <Usage run={r}/><button onClick={()=>ctx.editSpec(id,{noise_seed:r.seed,seed_mode:'fixed'})}>沿用此 Noise seed</button>{r.error&&<p className="error-message">{r.error}</p>}
-            <details><summary>提示詞與參數</summary><textarea readOnly rows={5} value={r.compiled?.prompt||r.spec.prompt}/><p>{r.spec.duration} 秒 · {r.spec.megapixels} MP · {r.spec.steps??8} steps · {r.spec.sampler??'euler'} / {r.spec.scheduler??'beta'}</p><p>{r.spec.model}</p></details>
+            <details><summary>提示詞與參數</summary><textarea readOnly rows={5} value={r.compiled?.prompt||r.spec.prompt}/><p>{r.spec.duration} 秒 · {r.spec.megapixels} MP · {r.spec.engine==='hyperflow'?`HyperFlow ${r.spec.hyperflow_steps??8} steps · ${r.spec.sampler??'euler'}`:`${r.spec.steps??8} steps · ${r.spec.sampler??'euler'} / ${r.spec.scheduler??'beta'}`}</p><p>{r.spec.engine==='hyperflow'?r.spec.hyperflow_model:r.spec.model}</p></details>
             <button onClick={()=>ctx.restoreVideo(id,{...r.spec,noise_seed:r.seed,seed_mode:"fixed"})}>套用此版提示詞與參數</button>
           </div>)}
           {!ctx.runs.some(r=>r.node_id===id)&&<p className="help">尚無生成紀錄。</p>}
@@ -1340,14 +1346,7 @@ function App() {
               proOptions={{ hideAttribution: true }}
             >
               <Background color="var(--grid-dot)" gap={24} size={1} />
-              <MiniMap
-                pannable
-                zoomable
-                nodeColor={(n) =>
-                  n.data.kind === "generation" ? "var(--gdd)" : "var(--g66)"
-                }
-                maskColor="color-mix(in srgb, var(--g10) 79%, transparent)"
-              />
+              <CanvasMiniMap />
               <Controls showInteractive={false} />
             </ReactFlow>
             <div className="canvas-toolbar">

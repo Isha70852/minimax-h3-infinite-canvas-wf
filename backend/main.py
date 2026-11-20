@@ -35,7 +35,7 @@ from . import motion_workflows
 from .motion_workflows import MotionGeneration
 from .audio_workflows import AudioGeneration, REGISTRY, catalog, compile_audio, resolve_text
 from .providers import provider, ProviderRejected
-from .workflow import VIDEO_REGISTRY, Generation, compile_workflow, MODELS, LORAS, ASPECTS, ROOT
+from .workflow import VIDEO_REGISTRY, Generation, compile_workflow, MODELS, LORAS, ASPECTS, ROOT, HYPERFLOW_MODELS
 
 workers = {}
 ACTIVE = {'uploading', 'submitting', 'queued', 'running', 'downloading', 'reconnecting'}
@@ -240,7 +240,7 @@ async def invalid(request, error):
 def config():
     values = db.settings()
     profiles = values.get('models') or [{'name': name, 'shift_enabled': False, 'shift_video': 6, 'shift_audio': 3} for name in MODELS]
-    return {'custom_workflows':custom_workflows.catalog(),'custom_categories':custom_workflows.categories(),'custom_models':custom_workflows.models(),'custom_presets':custom_workflows.presets(),'provider_profiles': provider_profiles.public(values,catalog=True), 'node_templates': node_templates.templates(), 'models': [m['name'] for m in profiles], 'model_profiles': profiles, 'image_workflows': image_workflows.catalog(), 'motion_workflows': motion_workflows.catalog(), 'audio_workflows': catalog(), 'video_two_pass_parameters': VIDEO_REGISTRY['two_pass_parameters'], 'video_defaults': values.get('video_defaults', {}), 'loras': values.get('loras') or LORAS, 'aspects': ASPECTS}
+    return {'custom_workflows':custom_workflows.catalog(),'custom_categories':custom_workflows.categories(),'custom_models':custom_workflows.models(),'custom_presets':custom_workflows.presets(),'provider_profiles': provider_profiles.public(values,catalog=True), 'node_templates': node_templates.templates(), 'models': [m['name'] for m in profiles], 'model_profiles': profiles, 'image_workflows': image_workflows.catalog(), 'motion_workflows': motion_workflows.catalog(), 'audio_workflows': catalog(), 'video_two_pass_parameters': VIDEO_REGISTRY['two_pass_parameters'], 'video_defaults': values.get('video_defaults', {}), 'loras': values.get('loras') or LORAS, 'hyperflow_models': HYPERFLOW_MODELS, 'aspects': ASPECTS}
 
 
 @app.get('/api/capabilities')

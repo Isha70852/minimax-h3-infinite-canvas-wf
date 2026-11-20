@@ -72,7 +72,10 @@ def install(app, services):
         audio=lambda kind:[w for w in cfg['audio_workflows'] if w.get('category')==kind]
         return {
             'note':'Built-in workflows. custom_workflows lists only user-imported packages; empty node_templates only means no saved presets.',
-            'video':[{'workflow':'unified','name':'MiniMax H3 video (T2VA/I2VA/L2VA/FL2VA/Ref2VA)','node_kind':'generation','node_spec_key':'spec','request_schema':'Generation'}],
+            'video':[{'workflow':'unified','name':'MiniMax H3 video (T2VA/I2VA/L2VA/FL2VA/Ref2VA)','node_kind':'generation','node_spec_key':'spec','request_schema':'Generation',
+                      'engines':{'standard':'UNETLoader + acceleration LoRA + BasicScheduler (default)',
+                                 'hyperflow':'spec.engine="hyperflow": HyperFlow H3 Flash checkpoint (hyperflow_model) with HyperFlowSigmas (hyperflow_steps 4/6/8, default 8); acceleration LoRA off by default (accel_lora_enabled)'},
+                      'hyperflow_models':cfg.get('hyperflow_models',[])}],
             'image':rows(cfg['image_workflows'],'imagegen','image_spec','ImageGeneration',lambda w:{'supports_lora':w.get('supports_lora',False),
                         'image_inputs':[f['key'] for f in w['fields'] if f.get('type')=='image']}),
             'motion':rows(cfg['motion_workflows'],'motiongen','motion_spec','MotionGeneration',lambda w:{'modes':next((f.get('options') for f in w['fields'] if f['key']=='mode'),None)}),

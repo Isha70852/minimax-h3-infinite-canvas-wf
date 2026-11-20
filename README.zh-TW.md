@@ -10,7 +10,7 @@
 
 | 類型 | 功能 |
 |---|---|
-| 影片 | MiniMax H3：文字生影片、參考圖生影片、首尾幀、二採放大，以及接續上一段影片的「導演台」 |
+| 影片 | MiniMax H3：文字生影片、參考圖生影片、首尾幀、二採放大，以及接續上一段影片的「導演台」；可改用較小、內建加速的 HyperFlow H3 Flash 模型 |
 | 動作遷移 | SCAIL-2：讓參考角色照著影片的動作動起來，或把影片裡的人換成你的角色 |
 | 圖片 | MiniMax H3 Image 文生圖／多圖編輯、Z-Image Turbo、FLUX.2 klein 圖片編輯、MOSS Image、Anima |
 | 音樂／語音 | YuE2 音樂、Qwen3 TTS、IndexTTS 2.5、Breeze TTS 2 |
@@ -63,6 +63,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start.ps1
 1. **Cell 1**：勾選要用的功能，會自動勾好需要的模型；也可以改模型存放位置（例如 Google Drive）。
 2. **Cell 2**：安裝 ComfyUI、所選功能的節點，以及 ComfyUI-Manager（可在 ComfyUI 網頁直接裝其他節點）。
 3. **Cell 3**：下載模型（可重跑、可之後追加）。
+   - **Cell 3-b（選用）**：加入自己的 LoRA，不用改程式。可貼 Hugging Face 或 Civitai 網址、任何下載連結、Google Drive 路徑，或直接從電腦上傳。
 4. **Cell 4**：啟動 ComfyUI。
 5. **Cell 5**：建立安全連線，畫面會顯示 `H3_API_URL` 和 token，填進畫布的 Colab 來源即可。
 
@@ -90,6 +91,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start.ps1
 - 勾選「二採放大」可得到更高解析度；「同時保存一採影片」會兩個版本都留下。輸出為 24 fps。
 - 圖片用途要對應模式：首幀接 first、尾幀接 last、參考圖接 reference。
 - 上傳影片會自動轉成 24 fps，長度不限制，由各工作流自行裁切或分段。
+
+#### HyperFlow H3 Flash（較小的模型）
+[HyperFlow H3 Flash](https://huggingface.co/VideoRebirthAI/hyperflow-h3-flash) 是 H3 的蒸餾版本，模型較小、效果接近，硬體需求更低。在影片節點把「採樣引擎」從「標準 H3」改成「HyperFlow Flash」即可使用。
+- 預設模型為 `minimax_h3_ref2va_hyperflow_flash_14b-int8_convrot.safetensors`（適合參考生影片）；文字生影片、首幀、首尾建議改用 fl2va 版本。GGUF 版本更省記憶體，但需另外安裝 ComfyUI-GGUF。
+- 一採改用 HyperFlow 自己的 Sigmas，預設 8 步（可改 4／6／8，越少越快）。
+- HyperFlow 已內建加速，所以預設**不接**加速 LoRA；需要時可在高級功能勾選。其他 LoRA、二採、導演台（Motion Context）、參考素材和節點模板都照常可用。
+- 執行端需要安裝 [ComfyUI-HyperFlow-Flash](https://github.com/Video-Rebirth/ComfyUI-HyperFlow-Flash) 節點（ComfyUI 0.43 以上）。Colab 勾選「HyperFlow H3 Flash」會自動安裝。RunningHub 範例為 `example_workflows/MiniMax_H3_HyperFlow_一採保留_二採Latent放大_無限畫布.json`。
 
 ### 圖片（MiniMax H3 Image）
 - 在圖片生成節點的「功能」選 **MiniMax H3 Image 文生圖** 或 **圖片編輯（多參考圖）**。
@@ -168,6 +176,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start.ps1
 | [YuE2](https://huggingface.co/m-a-p/YuE2-3B/blob/main/LICENSE) | 權重 CC BY-NC 4.0（非商用） |
 | [Breeze TTS 2](https://huggingface.co/BreezeBlue/Breeze-TTS-2) | 程式碼 Apache-2.0；權重與輸出限研究／非商用 |
 | [IndexTTS 2.5](https://huggingface.co/IndexTeam/IndexTTS-2.5) | Bilibili 模型使用協議 |
+| [HyperFlow H3 Flash](https://huggingface.co/VideoRebirthAI/hyperflow-h3-flash) | MiniMax H3 衍生模型，沿用 MiniMax H3 社群授權（含地區限制）；節點為 GPL-3.0 |
 | 加速 LoRA、量化版、編碼器、VAE | 依各自上游授權 |
 
 **感謝**
@@ -186,5 +195,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start.ps1
   [ListHelper](https://github.com/dseditor/ComfyUI-ListHelper)、
   [Goohai Tools](https://github.com/goohai/Goohaitools-comfyui)、
   [MieNodes](https://github.com/MieMieeeee/ComfyUI-MieNodes)、
-  [Pika H3 Flex](https://huggingface.co/Pika-Labs/Pika-H3-Flex)。
+  [Pika H3 Flex](https://huggingface.co/Pika-Labs/Pika-H3-Flex)、
+  [HyperFlow H3 Flash](https://github.com/Video-Rebirth/ComfyUI-HyperFlow-Flash)（Video Rebirth）、
+  [ComfyUI-GGUF](https://github.com/city96/ComfyUI-GGUF)。
+- **Colab 遠端 ComfyUI**：Colab 上執行 ComfyUI 的作法參考了[松音](https://www.facebook.com/dseditorlab/?locale=zh_TW)。
 - **服務與開源專案**：[RunningHub](https://www.runninghub.ai/)、React、Vite、XYFlow、FastAPI、Uvicorn、Lucide、Mediabunny。

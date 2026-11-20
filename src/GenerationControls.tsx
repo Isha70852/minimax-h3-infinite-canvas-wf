@@ -48,8 +48,23 @@ export function modelSelection(name:string, config:any) {
   return {model:name,shift_enabled:builtin?null:!!profile?.shift_enabled,shift_video:profile?.shift_video??6,shift_audio:profile?.shift_audio??3};
 }
 
+export const HYPERFLOW_DEFAULT='minimax_h3_ref2va_hyperflow_flash_14b-int8_convrot.safetensors';
+export const isHyperflow=(spec:any)=>spec?.engine==='hyperflow';
+/** Engine choice. Switching to HyperFlow leaves the main acceleration LoRA off by default; standard keeps its prior behaviour. */
+export function EngineSelect({spec,onChange}:any){
+  return <select aria-label="採樣引擎" title="採樣引擎" value={spec.engine||'standard'} onChange={e=>onChange({engine:e.target.value})}><option value="standard">標準 H3</option><option value="hyperflow">HyperFlow Flash</option></select>;
+}
+/** The model picker: standard UNet list, or HyperFlow checkpoints (pick from the list or type another file name). */
+export function VideoModelField({spec,config,onChange,ariaLabel='節點模型'}:any){
+  if(isHyperflow(spec)){const value=spec.hyperflow_model||HYPERFLOW_DEFAULT;const options=Array.from(new Set([...(config.hyperflow_models||[HYPERFLOW_DEFAULT]),value]));
+    return <select aria-label={ariaLabel} title={value} value={value} onChange={e=>onChange({hyperflow_model:e.target.value})}>{options.map(m=><option key={m} value={m}>{m}</option>)}</select>;}
+  return <select aria-label={ariaLabel} title={spec.model} value={spec.model} onChange={e=>onChange(modelSelection(e.target.value,config))}>{Array.from(new Set([...config.models,spec.model])).map((m:string)=><option key={m} value={m}>{m}</option>)}</select>;
+}
+
 export function AdvancedSettings({spec,config,onChange,driveAudio}:any) {
   const enabled=spec.lora_enabled!==false;
+  const hyper=isHyperflow(spec);
+  const accel=spec.accel_lora_enabled??!hyper;
   const shift=spec.shift_enabled??(spec.lora===SPECIAL_LORA);
   const loras=Array.from(new Set([...(config.loras||[]),spec.lora].filter(Boolean))) as string[];
   return <details className="advanced-settings nodrag nowheel" onDoubleClick={e=>e.stopPropagation()}>
@@ -62,19 +77,25 @@ export function AdvancedSettings({spec,config,onChange,driveAudio}:any) {
       <label>Seed 模式<select value={spec.seed_mode??(spec.noise_seed!=null?'fixed':'randomize')} onChange={e=>onChange({seed_mode:e.target.value,...(e.target.value==='fixed'&&spec.noise_seed==null?{noise_seed:'0'}:{})})}><option value="randomize">randomize · 每次隨機</option><option value="fixed">fixed · 固定</option></select></label><label>Noise seed<input aria-label="Noise seed" type="text" inputMode="numeric" placeholder="留空每次隨機；或貼上歷史 seed" value={spec.noise_seed??''} onChange={e=>{if(/^[0-9]*$/.test(e.target.value))onChange({noise_seed:e.target.value||null,seed_mode:'fixed'});}}/></label><p className="help">範圍 0–18446744073709551615。相同 seed 仍需配合相同模型、素材及參數；不保證不同環境的輸出完全一致。</p>
       <label className="check-row"><input type="checkbox" checked={enabled} onChange={e=>onChange({lora_enabled:e.target.checked})}/>啟用 LoRA 與 Shift</label>
       <fieldset disabled={!enabled}>
-        <label>主要 LoRA 強度<NumberInput min={-20} max={20} step={.1} value={spec.lora_strength??1} onValueChange={(n:number)=>onChange({lora_strength:n})}/></label>
+        {hyper&&<><label className="check-row"><input type="checkbox" checked={accel} onChange={e=>onChange({accel_lora_enabled:e.target.checked})}/>接上主要加速 LoRA（HyperFlow 已內建加速，預設不接）</label></>}
+        <label>主要 LoRA 強度<NumberInput disabled={!accel} min={-20} max={20} step={.1} value={spec.lora_strength??1} onValueChange={(n:number)=>onChange({lora_strength:n})}/></label>
         {(spec.extra_loras||[]).map((l:any,i:number)=><div className="image-lora-row" key={i}><input type="checkbox" checked={l.enabled!==false} onChange={e=>onChange({extra_loras:spec.extra_loras.map((v:any,j:number)=>i===j?{...v,enabled:e.target.checked}:v)})}/><input placeholder="額外 LoRA 檔名" value={l.name} onChange={e=>onChange({extra_loras:spec.extra_loras.map((v:any,j:number)=>i===j?{...v,name:e.target.value}:v)})}/><NumberInput min={-20} max={20} step={.1} value={l.strength} onValueChange={(n:number)=>onChange({extra_loras:spec.extra_loras.map((v:any,j:number)=>i===j?{...v,strength:n}:v)})}/><button onClick={()=>onChange({extra_loras:spec.extra_loras.filter((_:any,j:number)=>j!==i)})}>移除</button></div>)}
         <button onClick={()=>onChange({extra_loras:[...(spec.extra_loras||[]),{name:'',strength:1,enabled:true}]})}>＋ 額外 LoRA（依順序載入）</button>
-        <label>LoRA 檔名<select aria-label="節點 LoRA" value={spec.lora} onChange={e=>onChange({lora:e.target.value,shift_enabled:e.target.value===SPECIAL_LORA,shift_video:6,shift_audio:3})}>{loras.map(m=><option key={m} value={m}>{m}</option>)}</select></label>
+        <label>LoRA 檔名<select disabled={!accel} aria-label="節點 LoRA" value={spec.lora} onChange={e=>onChange({lora:e.target.value,shift_enabled:e.target.value===SPECIAL_LORA,shift_video:6,shift_audio:3})}>{loras.map(m=><option key={m} value={m}>{m}</option>)}</select></label>
         <label className="check-row"><input type="checkbox" checked={!!shift} onChange={e=>onChange({shift_enabled:e.target.checked})}/>啟用 video / audio Shift</label>
         {shift&&<div className="advanced-grid"><label>Video Shift<NumberInput value={spec.shift_video??6} min={0} max={100} step={0.1} onValueChange={(n:number)=>onChange({shift_video:n})}/></label><label>Audio Shift<NumberInput value={spec.shift_audio??3} min={0} max={100} step={0.1} onValueChange={(n:number)=>onChange({shift_audio:n})}/></label></div>}
         <p className="help">768p 4step LoRA 預設 Shift 6 / 3；「4步加速」預設關閉。可在此覆寫；停用 LoRA 時 Shift 一起停用。</p>
       </fieldset>
       <fieldset><legend>CLIP / VAE（留空沿用工作流）</legend>{[['clip_name','CLIP'],['video_vae_name','Video VAE'],['audio_vae_name','Audio VAE']].map(([key,label])=><label key={key}>{label}<input value={spec[key]||''} placeholder="執行端實際模型檔名" onChange={e=>onChange({[key]:e.target.value})}/></label>)}</fieldset>
-      <label>一採 Sigma 來源<select value={spec.sigma_mode||'scheduler'} onChange={e=>onChange({sigma_mode:e.target.value})}><option value="scheduler">BasicScheduler（預設）</option><option value="manual">ManualSigmas · 手動序列</option></select></label>
+      {hyper?<><fieldset><legend>HyperFlow Flash</legend>
+        <label>HyperFlow Sigmas steps<select value={spec.hyperflow_steps??8} onChange={e=>onChange({hyperflow_steps:Number(e.target.value)})}><option value={4}>4 · 速度優先</option><option value={6}>6 · 平衡</option><option value={8}>8 · 品質優先（預設）</option></select></label>
+        <label>Weights in（僅 GGUF）<select value={spec.hyperflow_weights_in||'auto'} onChange={e=>onChange({hyperflow_weights_in:e.target.value})}>{['auto','ram','disk'].map(x=><option key={x}>{x}</option>)}</select></label>
+        <label>Sampler<input value={spec.sampler??'euler'} onChange={e=>onChange({sampler:e.target.value})}/></label></fieldset>
+        <p className="help">一採改用 HyperFlow Loader 與 HyperFlow Sigmas，Steps／Scheduler／手動 Sigma 不生效；官方建議 euler、CFG 1。參考生影片用 ref2va 模型，文生／首幀／首尾建議改用 fl2va。GGUF 需另裝 ComfyUI-GGUF。二採精修、Motion Context 與 LoRA 照常可用。</p></>
+      :<>      <label>一採 Sigma 來源<select value={spec.sigma_mode||'scheduler'} onChange={e=>onChange({sigma_mode:e.target.value})}><option value="scheduler">BasicScheduler（預設）</option><option value="manual">ManualSigmas · 手動序列</option></select></label>
       <div className="advanced-grid"><label>Sampler<input value={spec.sampler??'euler'} onChange={e=>onChange({sampler:e.target.value})}/></label>{spec.sigma_mode!=='manual'&&<><label>Steps<NumberInput value={spec.steps??8} min={1} max={200} onValueChange={(n:number)=>onChange({steps:n})}/></label><label>Scheduler<input value={spec.scheduler??'beta'} onChange={e=>onChange({scheduler:e.target.value})}/></label></>}</div>
       {spec.sigma_mode==='manual'&&<label>Sigmas（逗號分隔）<textarea rows={3} value={spec.manual_sigmas??'1.0, 0.972973, 0.923077, 0.8, 0.571429, 0.333333, 0.0'} onChange={e=>onChange({manual_sigmas:e.target.value})}/></label>}
-      <p className="help">手動模式取代一採 BasicScheduler，Steps／Scheduler 不生效。預設序列有 7 個值，為 6 個採樣區間。二採精修仍使用原有規劃器；切換模式會保留兩邊設定。</p>
+      <p className="help">手動模式取代一採 BasicScheduler，Steps／Scheduler 不生效。預設序列有 7 個值，為 6 個採樣區間。二採精修仍使用原有規劃器；切換模式會保留兩邊設定。</p></>}
       <label className="check-row"><input type="checkbox" checked={!!spec.low_vram_enabled} onChange={e=>onChange({low_vram_enabled:e.target.checked})}/>啟用降低顯存（預設關閉）</label>
       {spec.low_vram_enabled&&<div className="advanced-grid"><label>Head chunks<NumberInput value={spec.head_chunks??(spec.megapixels>=1.5?8:4)} min={1} max={56} onValueChange={(n:number)=>onChange({head_chunks:n})}/></label><label>Chunks<NumberInput value={spec.chunks??(spec.megapixels>=1.5?4:2)} min={1} max={64} onValueChange={(n:number)=>onChange({chunks:n})}/></label></div>}
       <p className="help">分塊可降低顯存需求，可能增加耗時。建議 1.0 MP 用 4 / 2，≥ 1.5 MP 用 8 / 4；依顯存自行開啟。</p>
@@ -105,7 +126,8 @@ export function VideoDefaults({config,value,onChange}:any){
   return <div className="connection-block"><h3>新影片節點預設參數</h3><p className="help">儲存後只套用至之後新增的影片節點；既有節點保持原設定。</p><div className="advanced-grid">
     <label>服務<ProviderSelect config={config} spec={value} video onChange={change}/></label>
     <label>模式<select value={value.mode} onChange={e=>change({mode:e.target.value})}><option value="T2VA">文生影片</option><option value="Ref2VA">參考生影片</option><option value="I2VA">首幀生影片</option><option value="L2VA">尾幀生影片</option><option value="FL2VA">首尾生影片</option></select></label>
-    <label>模型<select value={value.model} onChange={e=>change(modelSelection(e.target.value,config))}>{config.models.map((m:string)=><option key={m}>{m}</option>)}</select></label>
+    <label>採樣引擎<EngineSelect spec={value} onChange={change}/></label>
+    <label>模型<VideoModelField spec={value} config={config} onChange={change} ariaLabel="預設模型"/></label>
     <label>比例<select value={value.aspect_ratio} onChange={e=>change({aspect_ratio:e.target.value})}>{config.aspects.map((a:string)=><option key={a}>{a}</option>)}</select></label>
     <label>大小 / MP<select value={value.megapixels} onChange={e=>change({megapixels:Number(e.target.value)})}>{Array.from({length:19},(_,i)=>(i+2)/10).map(n=><option key={n} value={n}>{n.toFixed(1)}</option>)}</select></label>
     <label>時長 / 秒<NumberInput min={1} max={15} value={value.duration} onValueChange={(n:number)=>change({duration:n})}/></label>

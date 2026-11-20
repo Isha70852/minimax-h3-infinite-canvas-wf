@@ -20,6 +20,7 @@ Read `GET /catalog` first for current capabilities, workflow IDs (catalog keys, 
 | Task | node_kind | spec key on node | spec `kind` / `workflow` |
 |---|---|---|---|
 | Video (H3) | `generation` | `spec` | Generation (no `workflow`) |
+| Video, HyperFlow Flash | `generation` | `spec` | Generation with `engine:"hyperflow"` |
 | H3 Image text-to-image | `imagegen` | `image_spec` | `image` / `h3_t2i` |
 | H3 Image edit (1–6 refs) | `imagegen` | `image_spec` | `image` / `h3_edit` |
 | Motion transfer | `motiongen` | `motion_spec` | `motion` / `scail2`, `values.mode:"animate"` |
@@ -57,6 +58,16 @@ Minimal video spec:
 ```json
 {"provider":"runninghub","prompt":"A quiet forest at dawn.","mode":"T2VA","duration":5,"megapixels":0.7,"references":[]}
 ```
+### HyperFlow H3 Flash video engine
+
+`spec.engine` selects the first-pass engine: `standard` (default; UNETLoader, acceleration LoRA and BasicScheduler/ManualSigmas) or `hyperflow`. HyperFlow uses the smaller distilled [HyperFlow H3 Flash](https://huggingface.co/VideoRebirthAI/hyperflow-h3-flash) checkpoint through the [ComfyUI-HyperFlow-Flash](https://github.com/Video-Rebirth/ComfyUI-HyperFlow-Flash) nodes, and needs less VRAM and RAM.
+
+- `hyperflow_model`: default `minimax_h3_ref2va_hyperflow_flash_14b-int8_convrot.safetensors`. Choices are listed in `/catalog.config.hyperflow_models`. The ref2va checkpoint suits `Ref2VA`; the fl2va checkpoint is recommended for T2VA/I2VA/L2VA/FL2VA. `.gguf` files also need ComfyUI-GGUF. `hyperflow_weights_in` (`auto`/`ram`/`disk`) applies only to GGUF files.
+- `hyperflow_steps`: 4 (speed), 6 or 8 (quality, default). The schedule replaces BasicScheduler and ManualSigmas, so `steps`, `scheduler` and `sigma_mode` are ignored. Keep `sampler:"euler"`.
+- The model is already distilled. The main acceleration LoRA is therefore off unless `accel_lora_enabled:true`. `extra_loras`, shift, low-VRAM chunking, two-pass refinement, Motion Context, references, drive audio and node templates work exactly as with the standard engine.
+- Example: `{"provider":"comfyui","engine":"hyperflow","hyperflow_steps":8,"prompt":"<Picture 1> walks through a market","mode":"Ref2VA","duration":5,"megapixels":0.7,"references":[{"asset_id":"IMG","role":"reference"}]}`.
+- Templates persist these fields. To reuse a HyperFlow preset, submit with its `template_id`.
+
 Merge the user's desired values with `/catalog.config.video_defaults` when appropriate. `Generation` schema defines model, LoRA, shift, steps, sampler, scheduler and memory options. `Ref2VA` references are `[{"asset_id":"...","role":"reference"}]`; Picture/Video/Audio labels are independently numbered in the compiler's order (role then media kind). Inspect preview `mapping` rather than inventing numbers.
 
 Image spec uses `kind:"image"`, `provider`, `workflow`, `values`, `image_assets`, `text_sources`, plus schema-defined advanced fields. Audio spec uses `kind:"audio"`, `provider`, `workflow`, `values`, `audio_asset_id`, `text_sources`. Discover exact workflow keys and fields from the catalog; never use the private RunningHub workflow number as `workflow`.
@@ -168,4 +179,4 @@ Catalog key: `config.motion_workflows` (currently `scail2`). MOTION_SPEC is `{"k
 
 ## Colab notebook (`colab/Yukine_Palette_Colab.ipynb`)
 
-No workflow JSON is uploaded to Colab. The notebook installs only the ticked feature packs/models (official Comfy-Org Hugging Face sources first), starts ComfyUI on localhost and exposes an authenticated native bridge: `/object_info`, `/prompt`, `/history/{id}`, `/queue`, `/interrupt`, `/upload/image` (also `type=output` latents), `/canvas/upload/video`, `/upload/audio`, `/view`, `/canvas/cancel/{id}`, `/health`, `/heartbeat`, `/models`. The canvas `Colab` provider compiles the same graphs as ComfyUI and posts them there, so every node kind works when its nodes/models are installed. Preflight uses `/object_info`, so missing model files are reported before submission. The user configures `H3_API_URL` and token locally; never request or log them.
+No workflow JSON is uploaded to Colab. The notebook installs only the ticked feature packs/models (official Comfy-Org Hugging Face sources first), starts ComfyUI on localhost and exposes an authenticated native bridge: `/object_info`, `/prompt`, `/history/{id}`, `/queue`, `/interrupt`, `/upload/image` (also `type=output` latents), `/canvas/upload/video`, `/upload/audio`, `/view`, `/canvas/cancel/{id}`, `/health`, `/heartbeat`, `/models`. The canvas `Colab` provider compiles the same graphs as ComfyUI and posts them there, so every node kind works when its nodes/models are installed. Preflight uses `/object_info`, so missing model files are reported before submission. The user configures `H3_API_URL` and token locally; never request or log them. The HyperFlow feature installs ComfyUI-HyperFlow-Flash and the default ref2va checkpoint; Cell 3-b adds user LoRAs from links, Drive or uploads, so reference only file names the user reports as present.

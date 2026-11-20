@@ -10,7 +10,7 @@ The canvas contains no AI models itself. Generation runs on the service you choo
 
 | Area | Features |
 |---|---|
-| Video | MiniMax H3: text-to-video, reference-to-video, first/last frame, second-pass upscaling, and a "director" that continues from the previous clip |
+| Video | MiniMax H3: text-to-video, reference-to-video, first/last frame, second-pass upscaling, and a "director" that continues from the previous clip; optionally the smaller, pre-accelerated HyperFlow H3 Flash model |
 | Motion transfer | SCAIL-2: animate a reference character with a video's motion, or replace the people in a video with your character |
 | Images | MiniMax H3 Image text-to-image / multi-image editing, Z-Image Turbo, FLUX.2 klein image editing, MOSS Image, Anima |
 | Music & speech | YuE2 music, Qwen3 TTS, IndexTTS 2.5, Breeze TTS 2 |
@@ -63,6 +63,7 @@ Use `colab/Yukine_Palette_Colab.ipynb`. It works like RunningHub, but **you neve
 1. **Cell 1** – tick the features you want; the needed models are ticked for you. You can change where models are stored (for example Google Drive).
 2. **Cell 2** – installs ComfyUI, the nodes for your features, and ComfyUI-Manager (to install more nodes from the ComfyUI web page).
 3. **Cell 3** – downloads the models (safe to re-run or extend later).
+   - **Cell 3-b (optional)** – add your own LoRAs without editing code: paste a Hugging Face or Civitai link, any download URL or a Google Drive path, or upload from your computer.
 4. **Cell 4** – starts ComfyUI.
 5. **Cell 5** – opens a secure link and shows `H3_API_URL` and a token. Paste both into a Colab source on the canvas.
 
@@ -90,6 +91,13 @@ Tips:
 - "Second pass" gives a higher resolution; "also keep first pass" saves both versions. Output is 24 fps.
 - Image roles must match the mode: first frame → first, last frame → last, reference image → reference.
 - Uploaded videos are converted to 24 fps. There is no length limit; each workflow trims or splits what it needs.
+
+#### HyperFlow H3 Flash (smaller model)
+[HyperFlow H3 Flash](https://huggingface.co/VideoRebirthAI/hyperflow-h3-flash) is a distilled H3. It is smaller, gives similar results and needs less hardware. Switch the video node's "engine" from "Standard H3" to "HyperFlow Flash".
+- The default model is `minimax_h3_ref2va_hyperflow_flash_14b-int8_convrot.safetensors` (for reference-to-video). The fl2va version is recommended for text-to-video, first-frame and first/last-frame modes. GGUF versions use less memory but also need ComfyUI-GGUF.
+- The first pass uses HyperFlow's own sigmas, 8 steps by default (4, 6 or 8; fewer is faster).
+- HyperFlow is already accelerated, so the acceleration LoRA is **off** by default; tick it in the advanced settings if you want it. Other LoRAs, the second pass, the director (Motion Context), references and node templates all work as before.
+- The runner needs the [ComfyUI-HyperFlow-Flash](https://github.com/Video-Rebirth/ComfyUI-HyperFlow-Flash) nodes (ComfyUI 0.43 or newer). Ticking "HyperFlow H3 Flash" in Colab installs them. For RunningHub, see `example_workflows/MiniMax_H3_HyperFlow_一採保留_二採Latent放大_無限畫布.json`.
 
 ### Images (MiniMax H3 Image)
 - In an image generation node, set "Feature" to **MiniMax H3 Image text-to-image** or **image editing (multiple references)**.
@@ -168,6 +176,7 @@ The code in this project is under the [MIT License](LICENSE). MIT covers this pr
 | [YuE2](https://huggingface.co/m-a-p/YuE2-3B/blob/main/LICENSE) | Weights CC BY-NC 4.0 (non-commercial) |
 | [Breeze TTS 2](https://huggingface.co/BreezeBlue/Breeze-TTS-2) | Code Apache-2.0; weights and outputs research / non-commercial |
 | [IndexTTS 2.5](https://huggingface.co/IndexTeam/IndexTTS-2.5) | Bilibili Model Use License Agreement |
+| [HyperFlow H3 Flash](https://huggingface.co/VideoRebirthAI/hyperflow-h3-flash) | A MiniMax H3 derivative under the MiniMax H3 Community License (territory limits apply); the nodes are GPL-3.0 |
 | Speed-up LoRAs, quantized files, encoders, VAEs | Their own upstream licenses |
 
 **Thanks to**
@@ -186,5 +195,8 @@ The code in this project is under the [MIT License](LICENSE). MIT covers this pr
   [ListHelper](https://github.com/dseditor/ComfyUI-ListHelper),
   [Goohai Tools](https://github.com/goohai/Goohaitools-comfyui),
   [MieNodes](https://github.com/MieMieeeee/ComfyUI-MieNodes),
-  [Pika H3 Flex](https://huggingface.co/Pika-Labs/Pika-H3-Flex).
+  [Pika H3 Flex](https://huggingface.co/Pika-Labs/Pika-H3-Flex),
+  [HyperFlow H3 Flash](https://github.com/Video-Rebirth/ComfyUI-HyperFlow-Flash) (Video Rebirth),
+  [ComfyUI-GGUF](https://github.com/city96/ComfyUI-GGUF).
+- **Remote ComfyUI on Colab**: the way ComfyUI runs on Colab draws on the work of [松音 (dseditor)](https://www.facebook.com/dseditorlab/?locale=zh_TW).
 - **Services and open source**: [RunningHub](https://www.runninghub.ai/), React, Vite, XYFlow, FastAPI, Uvicorn, Lucide, Mediabunny.

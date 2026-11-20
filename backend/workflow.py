@@ -12,6 +12,9 @@ ROOT = Path(__file__).resolve().parents[1]
 VIDEO_REGISTRY = json.loads((ROOT/'workflows/video_registry.json').read_text(encoding='utf-8'))
 MODELS = ['minimax_h3_fl2va_int8_convrot.safetensors', 'minimax_h3_hybrid_fl2va_ref2va_b25-49-int8_r.safetensors']
 LORAS = ['minimax_h3_turbo_4步加速_comfyui.safetensors', 'minimax_h3_fl2v_turbo_4step_v1.2_768p_comfyui_bf16.safetensors']
+# HyperFlow H3 Flash (VideoRebirthAI/hyperflow-h3-flash): distilled checkpoints loaded by ComfyUI-HyperFlow-Flash.
+HYPERFLOW_MODELS = ['minimax_h3_ref2va_hyperflow_flash_14b-int8_convrot.safetensors', 'minimax_h3_fl2va_hyperflow_flash_14b-int8_convrot.safetensors',
+                    'minimax_h3_ref2va_hyperflow_flash_14b-Q4_K_M.gguf', 'minimax_h3_fl2va_hyperflow_flash_14b-Q4_K_M.gguf']
 ASPECTS = ['16:9 (Widescreen)', '9:16 (Portrait Widescreen)', '1:1 (Square)', '4:3 (Standard)', '3:4 (Portrait Standard)']
 
 
@@ -58,6 +61,11 @@ class Generation(BaseModel):
     model: str = Field(default=MODELS[0], min_length=1, max_length=500)
     lora: str = Field(default=LORAS[0], min_length=1, max_length=500)
     lora_enabled: bool = True
+    engine: Literal['standard','hyperflow'] = Field(default='standard', description='standard: UNETLoader + BasicScheduler/ManualSigmas. hyperflow: HyperFlowLoader + HyperFlowSigmas for the first pass (ComfyUI-HyperFlow-Flash).')
+    hyperflow_model: str = Field(default=HYPERFLOW_MODELS[0], min_length=1, max_length=500)
+    hyperflow_steps: Literal[4,6,8] = Field(default=8, description='HyperFlowSigmas steps: 4 speed, 6 balanced, 8 quality.')
+    hyperflow_weights_in: Literal['auto','ram','disk'] = 'auto'
+    accel_lora_enabled: bool | None = Field(default=None, description='Connect the main acceleration LoRA. null = on for standard, off for hyperflow (HyperFlow is already distilled). Extra LoRAs are unaffected.')
     lora_strength: float = Field(default=1, ge=-20, le=20, allow_inf_nan=False)
     extra_loras: list[VideoLoRA] = Field(default_factory=list, max_length=30)
     shift_enabled: bool | None = None
@@ -162,14 +170,20 @@ def compile_workflow(spec: Generation, assets: dict, filenames: dict | None = No
     for key,(role,field) in config['fields'].items():
         if N[role] not in graph or field not in graph[N[role]]['inputs']: raise ValueError(f'影片映射已失效：{key}')
         graph[N[role]]['inputs'][field] = values[key]
-    graph[N['lora']]['inputs']['model'] = [N['model'],0]
+    hyperflow = spec.engine == 'hyperflow'
+    base = [N['model'],0]
+    if hyperflow:
+        graph[N['hyperflow_loader']] = {'class_type':'HyperFlowLoader','inputs':{'unet_name':spec.hyperflow_model.strip(),'weights_in':spec.hyperflow_weights_in}}
+        base = [N['hyperflow_loader'],0]
+    graph[N['lora']]['inputs']['model'] = base
     graph[N['lora']]['inputs']['strength_model'] = spec.lora_strength
     graph[N['resolution']]['inputs']['multiple'] = 32
     graph[N['output']]['inputs']['filename_prefix'] = f'H3Canvas/{seed}'
     def node(id, cls, **inputs):
         graph[id] = {'class_type': cls, 'inputs': inputs}
         return [id, 0]
-    model = [N['lora'], 0] if spec.lora_enabled else [N['model'], 0]
+    accel = spec.accel_lora_enabled if spec.accel_lora_enabled is not None else not hyperflow
+    model = [N['lora'], 0] if spec.lora_enabled and accel else base
     if spec.lora_enabled:
         for i, lora in enumerate(spec.extra_loras):
             if not lora.enabled or not lora.name.strip(): continue
@@ -268,6 +282,10 @@ def compile_workflow(spec: Generation, assets: dict, filenames: dict | None = No
     if spec.sigma_mode=='manual':
         graph[N['manual_sigmas']]={'class_type':'ManualSigmas','inputs':{'sigmas':spec.manual_sigmas}}
         graph[N['sample']]['inputs']['sigmas']=[N['manual_sigmas'],0]
+    if hyperflow:
+        # HyperFlow's own step schedule replaces the first-pass scheduler; second-pass refinement keeps its planner.
+        graph[N['hyperflow_sigmas']] = {'class_type':'HyperFlowSigmas','inputs':{'model':graph[N['scheduler']]['inputs']['model'],'steps':spec.hyperflow_steps}}
+        graph[N['sample']]['inputs']['sigmas'] = [N['hyperflow_sigmas'],0]
     for output in outputs: visit(output)
     return {'workflow': {k: v for k, v in graph.items() if k in active}, 'prompt': prompt,
             'mapping': [{k: r[k] for k in ('id', 'name', 'kind', 'role', 'alias', 'tag')} for r in refs],
