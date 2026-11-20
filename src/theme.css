@@ -41,3 +41,14 @@ body { background: var(--g10); }
 
 /* Native form controls (sliders, checkboxes) follow the palette. */
 :root:not([data-theme="dark"]) { accent-color: #a8862f; }
+
+/* Dark overlay scopes (theme.tokens.css) redefine the palette but would still inherit
+   the page's ink colour; give their labels and icons the overlay's own light ink. */
+.video-mute, .card-media .expand, .composer-refs span, .library-tile-media > span,
+.custom-media-tile > span, .archive-thumb > span { color: var(--geb); }
+/* Ivory paper: the library tile action reads as a light paper chip instead of a black badge. */
+:root:not([data-theme="dark"]) .library-tile-media > span {
+  background: color-mix(in srgb, #f8f6f0 94%, transparent); color: #33302d;
+  border: 1px solid #cfc7b8; border-radius: 999px; box-shadow: 0 2px 8px rgba(58, 52, 43, .18);
+}
+:root:not([data-theme="dark"]) .library-tile.is-picked .library-tile-media > span { background: #33302d; color: #f8f6f0; border-color: #c9a24a; }
